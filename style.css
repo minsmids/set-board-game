@@ -1,86 +1,139 @@
-/* style.css */
 /* ===== Telegram-friendly baseline ===== */
 :root {
-  --bg: var(--tg-theme-bg-color, #f0f0f0);
-  --text: var(--tg-theme-text-color, #333);
-  --hint: var(--tg-theme-hint-color, #888);
-  --link: var(--tg-theme-link-color, #007bff);
-  --button: var(--tg-theme-button-color, #007bff);
-  --button-text: var(--tg-theme-button-text-color, #fff);
-  --secondary-bg: var(--tg-theme-secondary-bg-color, #fff);
+  /* Dynamic colors from Telegram themes with fallbacks */
+  --bg:            var(--tg-theme-bg-color, #f0f0f0);
+  --text:          var(--tg-theme-text-color, #333);
+  --hint:          var(--tg-theme-hint-color, #888);
+  --link:          var(--tg-theme-link-color, #007bff);
+  --button:        var(--tg-theme-button-color, #007bff);
+  --button-text:   var(--tg-theme-button-text-color, #fff);
+  --secondary-bg:  var(--tg-theme-secondary-bg-color, #fff);
 }
 
+/* динамический viewport: 100dvh поддерживается iOS 15.4+ / Android 12+  */
 html,
 body {
   height: 100dvh;
-  margin: 0;
-  padding: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: sans-serif;
+  /* fallback для старых движков Safari/Chrome: */
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 
-#app {
+body {
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: env(safe-area-inset-top,0) env(safe-area-inset-right,0)
+           env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
+  box-sizing: border-box;
+  overscroll-behavior-y: none;          /* отключаем pull-to-refresh */
+}
+
+/* ================= Layouts ================= */
+#login,
+#lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+}
+
+/* flex-колонка: шапка — центр — подвал */
+#game {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-/* Скрываем блоки по умолчанию, управление через inline-стили */
-#login,
-#lobby,
-#game {
-  width: 100%;
+/* ===== Top / bottom bars ===== */
+#info,
+#controls {
+  flex: 0 0 auto;            /* не сжимать */
+  box-sizing: border-box;
 }
 
+#info {
+  padding: calc(6px + env(safe-area-inset-top,0)) 10px 6px;
+  text-align: center;
+  font-size: 0.9rem;
+  background: var(--secondary-bg);
+  color: var(--hint);
+  border-bottom: 1px solid var(--hint);
+}
+
+#room-code-display { font-weight: 600; margin-bottom: 2px; }
+#sets-count       { margin-top: 4px; font-weight: 600; color: var(--text); }
+
+#controls {
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom,0));
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: var(--bg);
+  border-top: 1px solid var(--hint);
+}
+
+/* ===== Central board area ===== */
 #board-container {
-  flex: 1;
-  overflow: auto;
+  flex: 1 1 0%;
+  min-height: 0;      /* даём flex-у реально ужаться */
+  display: flex;
+  justify-content: center;
+  overflow: hidden;   /* скролл больше не нужен */
 }
 
 #board {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 16px;
-}
-
-#controls {
   display: flex;
-  gap: 8px;
-  padding: 16px;
-  background: var(--secondary-bg);
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
 }
 
+/* ===== Card ===== */
+.card {
+  aspect-ratio: 2 / 3;           /* пропорции; размер даёт JS */
+  background: var(--secondary-bg);
+  border: 2px solid var(--hint);
+  border-radius: 8px;
+  padding: 4% 2%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: transform 0.08s ease, border-color 0.08s ease;
+}
+
+.card:hover    { border-color: var(--link); }
+.card.selected {
+  border-color: var(--link);
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(0,123,255,.45);
+}
+
+.symbol { width: 80%; height: auto; }
+
+/* ===== Buttons & inputs ===== */
 button {
-  background: var(--button);
-  color: var(--button-text);
+  padding: 10px 15px;
+  font-size: 1rem;
   border: none;
   border-radius: 6px;
-  padding: 10px 16px;
-  font-size: 1rem;
+  background: var(--button);
+  color: var(--button-text);
   cursor: pointer;
 }
+button:hover  { filter: brightness(0.9); }
+button:active { transform: scale(0.98); }
 
-button:hover {
-  filter: brightness(0.9);
-}
-
-button:active {
-  transform: scale(0.98);
-}
-
-input[type="text"] {
+input[type="text"]{
   padding: 10px;
   font-size: 1rem;
   border: 1px solid var(--hint);
   border-radius: 6px;
-  width: 100%;
-}
-
-#players,
-#room-code-display,
-#sets-count {
-  padding: 8px 16px;
-  font-size: 0.9rem;
+  width: 220px;
 }
