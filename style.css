@@ -56,7 +56,7 @@ body {
 /* Individual card styling */
 .card {
   width: 100px; /* Fixed width */
-  height: 100px;  /* Fixed height */
+  height: 150px;  /* Fixed height */
   flex-shrink: 0; /* Prevent cards from shrinking */
   box-sizing: border-box; /* Ensure padding is included in the size */
   background-color: #fff;
