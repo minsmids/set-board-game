@@ -36,6 +36,7 @@ body {
 }
 /* 1.  Основа макета — flex-колонка */
 #game {
+
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -74,9 +75,9 @@ body {
 .card {
   /* Responsive width: 3 cards per row on narrow screens,
      4 cards if width > 470 px */
-  width: calc((100% - 30px)/3);
-  
-  max-width: 110px;
++  aspect-ratio: 2 / 3;          /* пропорции карты */
++  width: auto;                  /* зададим из JS */
++  height: auto;
   aspect-ratio: 2 / 3;            /* Keep proportions without fixed height */
   background: var(--secondary-bg);
   border: 2px solid var(--hint);

@@ -407,3 +407,43 @@ function endGame() {
             });
     }
 }
+/* === динамическая раскладка карт === */
+function layoutCards () {
+  const GAP = 10;                                   // такой же, как в CSS
+  const board        = document.getElementById('board');
+  const boardBox     = document.getElementById('board-container');
+  const totalCards   = board.children.length;
+  if (!totalCards) return;
+
+  const W = boardBox.clientWidth;
+  const H = boardBox.clientHeight;
+  let bestCols = 1, bestW = W;                      // запасной вариант
+
+  // перебираем количество колонок от 1 до N
+  for (let cols = 1; cols <= totalCards; cols++) {
+    const wCard = (W - GAP * (cols - 1)) / cols;
+    const hCard = wCard * 3 / 2;                    // aspect 2:3 → H = W·1.5
+    const rows  = Math.ceil(totalCards / cols);
+    const needH = rows * hCard + GAP * (rows - 1);
+
+    if (needH <= H) {                               // всё влезло!
+      bestCols = cols;
+      bestW    = wCard;
+      break;
+    }
+  }
+
+  // применяем размеры
+  [...board.children].forEach(el => {
+    el.style.width  = `${bestW}px`;
+    el.style.height = `${bestW * 3 / 2}px`;
+  });
+}
+
+/* вызвать после любой перерисовки поля */
+function renderBoard (cards) {
+  // ...ваш существующий код создания <div class="card">…...
+  layoutCards();
+}
+
+window.addEventListener('resize', layoutCards);
