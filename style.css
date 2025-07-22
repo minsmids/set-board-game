@@ -94,6 +94,7 @@ body {
   justify-content: center;
   gap: 10px;
   flex-shrink: 0; /* Prevent controls from shrinking */
+  flex-wrap: wrap; /* Allow buttons to wrap to the next line */
 }
 
 /* General button styling */
