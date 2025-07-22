@@ -5,14 +5,14 @@
 
 /******************* Firebase CONFIG ********************/
 const firebaseConfig = {
-  apiKey            : "AIzaSy…",                // ←-- свои ключи
-  authDomain        : "set-telegram.firebaseapp.com",
-  databaseURL       : "https://set-telegram-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId         : "set-telegram",
-  storageBucket     : "set-telegram.appspot.com",
-  messagingSenderId : "772429781868",
-  appId             : "1:772429781868:web:bbdf0385402df96e36b149",
-  measurementId     : "G-SSKXER5X99"
+  apiKey: "AIzaSyD5X8yyI8CzxDdlenFLS13QOFKU3CevQrs",
+  authDomain: "set-telegram.firebaseapp.com",
+  databaseURL: "https://set-telegram-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "set-telegram",
+  storageBucket: "set-telegram.firebasestorage.app",
+  messagingSenderId: "772429781868",
+  appId: "1:772429781868:web:bbdf0385402df96e36b149",
+  measurementId: "G-SSKXER5X99"
 };
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
