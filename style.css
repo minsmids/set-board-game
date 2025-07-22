@@ -69,11 +69,20 @@ body {
 #controls {
   padding: 10px 10px calc(10px + env(safe-area-inset-bottom,0));
   display: flex;
-  justify-content: center;
+  flex-direction: column; /* Changed to column to stack elements */
+  align-items: center; /* Center items horizontally */
   flex-wrap: wrap;
   gap: 10px;
   background: var(--bg);
   border-top: 1px solid var(--hint);
+}
+
+#room-invite-link {
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: var(--text);
+  word-break: break-all;
+  text-align: center;
 }
 
 /* ===== Central board area ===== */
