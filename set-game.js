@@ -391,3 +391,19 @@ function checkSet() {
         db.ref(`rooms/${currentRoomId}/game/cards`).once("value", (s) => drawBoard(s.val()));
     });
 }
+
+function endGame() {
+    if (!currentRoomId) return;
+    if (confirm("Вы уверены, что хотите завершить игру и удалить комнату?")) {
+        db.ref(`rooms/${currentRoomId}`).remove()
+            .then(() => {
+                console.log(`Room ${currentRoomId} removed.`);
+                currentRoomId = null;
+                showLobby();
+            })
+            .catch(error => {
+                console.error("Error removing room:", error);
+                alert("Не удалось завершить игру. Попробуйте еще раз.");
+            });
+    }
+}
