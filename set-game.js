@@ -30,16 +30,16 @@ const COLORS       = ["red", "green", "purple"];
 document.addEventListener("DOMContentLoaded", () => {
   const tg = window.Telegram?.WebApp;
 
-  if (tg && tg.initDataUnsafe?.user) {  // запущено в Telegram
+  if (tg && tg.initDataUnsafe?.user) {
     tg.ready();
     tg.expand();
 
     const u = tg.initDataUnsafe.user;
     nickname = u.username || `${u.first_name || "user"}_${u.id}`;
 
-    loginUser(tg.initDataUnsafe.start_param);  // если пришли по приглашению
+    loginUser(tg.initDataUnsafe.start_param);
   } else {
-    document.getElementById("login").style.display = "block"; // обычный браузер
+    document.getElementById("login").style.display = "block";
   }
 });
 
@@ -51,16 +51,14 @@ function manualLogin() {
 }
 
 async function loginUser(roomIdFromLink = null) {
-  // 1) попытка восстановить предыдущую сессию
   const snap = await db.ref(`playerSessions/${nickname}`).once("value");
   const prevRoom = snap.val();
   if (prevRoom && (await db.ref(`rooms/${prevRoom}`).once("value")).exists()) {
     joinRoom(prevRoom);
     return;
   }
-  if (prevRoom) db.ref(`playerSessions/${nickname}`).remove();  // зачистить «битую» сессию
+  if (prevRoom) db.ref(`playerSessions/${nickname}`).remove();
 
-  // 2) если пришли по приглашению
   if (roomIdFromLink) {
     if ((await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists()) {
       joinRoom(roomIdFromLink);
@@ -71,7 +69,6 @@ async function loginUser(roomIdFromLink = null) {
     return;
   }
 
-  // 3) новый пользователь – показываем лобби
   showLobby();
 }
 
@@ -111,10 +108,10 @@ function joinRoom(roomId, isHost = false) {
   document.getElementById("lobby").style.display  = "none";
   document.getElementById("game").style.display   = "block";
 
-  // вместо кнопки — показываем ссылку для копирования
+  // вместо кнопки — показываем поле с ссылкой для копирования
   const linkInput = document.getElementById("invite-link");
   if (linkInput) {
-    const bot  = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
+    const bot  = (Telegram.WebApp.initDataUnsafe || {}).bot_username || "setboardgame_bot";
     const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;
     linkInput.value = link;
     linkInput.style.display = "block";
@@ -128,6 +125,7 @@ function joinRoom(roomId, isHost = false) {
 
   db.ref(`rooms/${roomId}/game/cards`)
     .on("value", snap => drawBoard(snap.val() || []));
+
   db.ref(`rooms/${roomId}/players`)
     .on("value", snap => {
       const list = Object.entries(snap.val() || {})
@@ -139,7 +137,7 @@ function joinRoom(roomId, isHost = false) {
 
 /******************* Game lifecycle ********************/
 function initializeGame() {
-  db.ref(`rooms/${currentRoomId}/players`).remove();  // reset scores
+  db.ref(`rooms/${currentRoomId}/players`).remove();
 
   const deck = [];
   for (let c = 0; c < 3; c++)
@@ -157,6 +155,7 @@ function initializeGame() {
 }
 
 function newGame()      { if (confirm("Новая партия?")) initializeGame(); }
+
 function addMoreCards() {
   db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
     const { cards = [], availableCards: avail = [] } = snap.val() || {};
@@ -182,7 +181,7 @@ function checkSet() {
   db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
     const { cards = [], availableCards: avail = [] } = snap.val() || {};
     const [a, b, c] = selected.map(i => cards[i]);
-    const isSet = [0, 1, 2, 3].every(i => {
+    const isSet = [0,1,2,3].every(i => {
       const s = new Set([a[i], b[i], c[i]]);
       return s.size === 1 || s.size === 3;
     });
@@ -220,20 +219,17 @@ function drawBoard(cardsData) {
   const board = document.getElementById("board");
   board.innerHTML = "";
 
-  // Convert Firebase data (object) to array if needed
   const cards = Array.isArray(cardsData)
     ? cardsData
-    : cardsData && typeof cardsData === "object"
+    : cardsData && typeof cardsData === 'object'
       ? Object.values(cardsData)
       : [];
 
   console.log("Rendering board with", cards.length, "cards");
 
-  // Update info bar
   document.getElementById("room-code-display").innerText = `Код комнаты: ${currentRoomId}`;
   document.getElementById("sets-count").innerText        = `Возможных SET-ов: ${countSets(cards)}`;
 
-  // Render each card
   cards.forEach((card, idx) => {
     const div = document.createElement("div");
     div.className = "card";
