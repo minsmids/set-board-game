@@ -66,7 +66,7 @@ async function loginUser(roomIdFromLink = null) {
       joinRoom(roomIdFromLink, true); // Create new room if it doesn't exist
       return;
     }
-    // Removed alert("Комната уже не существует"); return;
+        // Removed alert("Комната уже не существует"); return;
   }
 
   // 3) новый пользователь – показываем лобби
