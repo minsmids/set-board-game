@@ -103,12 +103,12 @@ function joinRoom(roomId, isHost = false) {
 
   /* приглашение – ссылка вида
      https://t.me/<bot>/setgame?startapp=<roomId>                         */
-  const btn = document.getElementById("invite-btn");
-  if (btn) {
+  const inviteLinkInput = document.getElementById("invite-link");
+  if (inviteLinkInput) {
     const bot = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
-    const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;     // 
-    btn.onclick = () => Telegram.WebApp.openTelegramLink(link);
-    btn.style.display = "block";
+    const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;
+    inviteLinkInput.value = link;
+    inviteLinkInput.style.display = "block";
   }
 
   db.ref(`rooms/${roomId}/players/${nickname}`).set({score:0});

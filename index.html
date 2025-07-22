@@ -51,7 +51,12 @@
     </div>
 
     <div id="controls">
-      <button id="invite-btn" style="display:none">Пригласить</button>
+      <input
+    type="text"
+    id="invite-link"
+    style="display:none; width:100%; padding:8px; box-sizing:border-box;"
+    readonly
+  />
       <button onclick="addMoreCards()">+3 карты</button>
       <button onclick="newGame()">Новая игра</button>
       <button onclick="endGame()">Завершить игру</button>
