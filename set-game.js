@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
     nickname = sanitize(u.username || `${u.first_name || "user"}_${u.id}`);
     loginUser(tg.initDataUnsafe.start_param);          // deep-link join if any
   } else {
-    document.getElementById("login").style.display = "block";
+    document.getElementById("login").style.display = "flex";
   }
 });
 
@@ -79,7 +79,7 @@ async function loginUser(roomIdFromLink = null) {
 
 function showLobby() {
   ["login", "game"].forEach(id => (document.getElementById(id).style.display = "none"));
-  document.getElementById("lobby").style.display = "block";
+  document.getElementById("lobby").style.display = "flex";
 }
 
 /******************* Lobby actions ********************/
