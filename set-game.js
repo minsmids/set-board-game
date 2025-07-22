@@ -95,7 +95,6 @@ async function joinRoomByCode() {
   } else {
     joinRoom(code);
   }
-}
 
 /******************* Core room handshake ********************/
 function joinRoom(roomId, isHost = false) {
