@@ -45,7 +45,7 @@ body {
   padding-bottom: 10px;
 }
 
-'''/* The board itself - a flex container for wrapping */
+/* The board itself - a flex container for wrapping */
 #board {
   display: flex;
   flex-wrap: wrap;
@@ -69,7 +69,7 @@ body {
   align-items: center;
   justify-content: space-around;
   transition: transform 0.1s ease, border-color 0.1s ease;
-}'''
+}
 
 .card:hover {
   border-color: #999;
