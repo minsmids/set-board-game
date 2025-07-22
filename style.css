@@ -1,19 +1,15 @@
-/* ===== Telegram-friendly baseline ===== */
+/* ===== Telegram-friendly baseline with fixed 4-column layout ===== */
 :root {
-  /* Dynamic colors from Telegram themes with fallbacks */
-  --bg:            var(--tg-theme-bg-color, #f0f0f0);
-  --text:          var(--tg-theme-text-color, #333);
-  --hint:          var(--tg-theme-hint-color, #888);
-  --link:          var(--tg-theme-link-color, #007bff);
-  --button:        var(--tg-theme-button-color, #007bff);
-  --button-text:   var(--tg-theme-button-text-color, #fff);
-  --secondary-bg:  var(--tg-theme-secondary-bg-color, #fff);
-
-  /* JS sets this for iOS Safari fallback */
+  --bg: var(--tg-theme-bg-color, #f0f0f0);
+  --text: var(--tg-theme-text-color, #333);
+  --hint: var(--tg-theme-hint-color, #888);
+  --link: var(--tg-theme-link-color, #007bff);
+  --button: var(--tg-theme-button-color, #007bff);
+  --button-text: var(--tg-theme-button-text-color, #fff);
+  --secondary-bg: var(--tg-theme-secondary-bg-color, #fff);
   --vh: 1vh;
 }
 
-/* dynamic viewport: use new units when available, fall back to JS var */
 html, body {
   height: calc(var(--vh, 1vh) * 100) !important;
 }
@@ -32,7 +28,7 @@ body {
   padding: env(safe-area-inset-top,0) env(safe-area-inset-right,0)
            env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
   box-sizing: border-box;
-  overscroll-behavior-y: none;          /* отключаем pull-to-refresh */
+  overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -47,18 +43,16 @@ body {
   gap: 12px;
 }
 
-/* flex-колонка: шапка — центр — подвал */
 #game {
   display: flex !important;
   flex-direction: column !important;
   height: 100% !important;
-  min-height: 0; /* Safari flex fix */
+  min-height: 0;
 }
 
-/* ===== Top / bottom bars ===== */
 #info,
 #controls {
-  flex: 0 0 auto;            /* не сжимать */
+  flex: 0 0 auto;
   box-sizing: border-box;
 }
 
@@ -72,7 +66,7 @@ body {
 }
 
 #room-code-display { font-weight: 600; margin-bottom: 2px; }
-#sets-count       { margin-top: 4px; font-weight: 600; color: var(--text); }
+#sets-count { margin-top: 4px; font-weight: 600; color: var(--text); }
 
 #controls {
   padding: 10px 10px calc(10px + env(safe-area-inset-bottom,0));
@@ -84,32 +78,32 @@ body {
   border-top: 1px solid var(--hint);
 }
 
-/* ===== Central board area ===== */
 #board-container {
   flex: 1 1 0% !important;
   min-height: 0;
   display: flex !important;
   justify-content: center !important;
-  align-items: flex-start !important; /* выравнивание по верху */
+  align-items: flex-start !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
-  padding: 10px; /* добавляем отступы */
+  padding: 10px;
   box-sizing: border-box !important;
-  max-width: 100% !important; /* Prevent Telegram from overriding width */
+  max-width: 100% !important;
 }
 
 #board {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  justify-content: center !important;
-  align-content: flex-start !important;
-  gap: 8px !important; /* Consistent with JS GAP */
-  width: auto !important; /* Allow JS to set exact width */
+  display: block !important;
+  width: auto !important;
   box-sizing: border-box !important;
-  min-height: min-content; /* важно для правильного расчета */
 }
 
-/* ===== Card ===== */
+.card-row {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+}
+
 .card {
   background: var(--secondary-bg);
   border: 2px solid var(--hint);
@@ -123,7 +117,7 @@ body {
   cursor: pointer;
   transition: transform 0.08s ease, border-color 0.08s ease;
   will-change: transform;
-  flex-shrink: 0 !important; /* Prevent cards from shrinking */
+  flex-shrink: 0 !important;
 }
 
 .card:hover {
@@ -142,13 +136,12 @@ body {
   flex-shrink: 0;
 }
 
-/* Медиа-запросы для разных размеров экрана */
 @media (max-width: 480px) {
   #board-container {
     padding: 5px;
   }
   
-  #board {
+  .card-row {
     gap: 8px !important;
   }
   
@@ -162,12 +155,11 @@ body {
     padding: 15px;
   }
   
-  #board {
+  .card-row {
     gap: 8px !important;
   }
 }
 
-/* ===== Buttons & inputs ===== */
 button {
   padding: 10px 15px;
   font-size: 1rem;
@@ -180,7 +172,7 @@ button {
 button:hover  { filter: brightness(0.9); }
 button:active { transform: scale(0.98); }
 
-input[type="text"]{
+input[type="text"] {
   padding: 10px;
   font-size: 1rem;
   border: 1px solid var(--hint);

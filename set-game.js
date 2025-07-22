@@ -1,10 +1,9 @@
 /* ===== SET Multiplayer (room-based) for Telegram Web App =====
-   Fixed layout bugs for desktop & iPhone (iOS Safari 16+).
+   Modified to enforce 4-column card layout.
    Changes:
-   - Robust viewport handling via CSS var --vh and ResizeObserver
-   - layoutCards(): enforces min 4 columns, uses getBoundingClientRect for width
-   - Enhanced initial layout with retries
-   - Added detailed debug logs
+   - Updated drawBoard() to structure cards in a 4-column grid
+   - Rewrote layoutCards() to calculate fixed 4-column layout
+   - Maintained existing game logic and Telegram integration
 */
 
 /******************* Firebase CONFIG ********************/
@@ -154,6 +153,159 @@ function joinRoom(roomId, isHost = false) {
   const ensureLayout = () => {
     requestAnimationFrame(layoutCards);
     if (attempt++ < 3 && document.getElementById("board").children.length > 0) {
+      setTimeout(ensureLayout, 200ව
+
+System: I notice you want to rewrite the rendering logic for a SET game to enforce a 4-column layout for the cards. I'll help create a modified version of the JavaScript and CSS to achieve this, ensuring the cards are displayed in a strict 4-column grid. Since this appears to be an update to existing artifacts, I'll use the same artifact_id for the JavaScript file and create a new one for the CSS changes.
+
+<xaiArtifact artifact_id="cd4c5214-66dd-45e9-8197-b652c9108cac" artifact_version_id="da7c05ed-923c-4d9f-83fe-b9b7c1b947bb" title="set-game.js" contentType="text/javascript">
+/* ===== SET Multiplayer (room-based) for Telegram Web App =====
+   Modified to enforce strict 4-column card layout.
+   Changes:
+   - Rewrote drawBoard() to organize cards into rows of exactly 4 columns
+   - Updated layoutCards() to compute sizes for a fixed 4-column grid
+   - Preserved all existing game logic and Telegram integration
+*/
+
+/******************* Firebase CONFIG ********************/
+const firebaseConfig = {
+  apiKey: "AIzaSy…",                     // ←-- свои ключи
+  authDomain: "set-telegram.firebaseapp.com",
+  databaseURL: "https://set-telegram-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "set-telegram",
+  storageBucket: "set-telegram.appspot.com",
+  messagingSenderId: "772429781868",
+  appId: "1:772429781868:web:bbdf0385402df96e36b149",
+  measurementId: "G-SSKXER5X99"
+};
+
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/******************* Global state ********************/
+let nickname       = "";
+let currentRoomId  = null;
+let selected       = [];
+const COLORS       = ["red", "green", "purple"];
+let resizeObserver = null;
+let layoutTimeout = null;
+
+/******************* Viewport bugfix for iOS Safari ********************/
+function setVHVar(){
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+}
+window.addEventListener('resize', setVHVar);
+window.addEventListener('orientationchange', setVHVar);
+setVHVar();
+
+/******************* Telegram bootstrap ********************/
+document.addEventListener("DOMContentLoaded", () => {
+  const tg = window.Telegram?.WebApp;
+
+  if (tg && tg.initDataUnsafe?.user) {          // запущено в Telegram
+    tg.ready(); tg.expand();
+
+    const u = tg.initDataUnsafe.user;
+    nickname = u.username || `${u.first_name || "user"}_${u.id}`;
+
+    loginUser(tg.initDataUnsafe.start_param);   // если пришли по приглашению
+  } else {
+    document.getElementById("login").style.display = "block"; // обычный браузер
+  }
+});
+
+/******************* Auth flows ********************/
+function manualLogin() {
+  nickname = document.getElementById("nickname")?.value.trim();
+  if (!nickname) { alert("Введите имя"); return; }
+  loginUser();
+}
+
+async function loginUser(roomIdFromLink = null) {
+  const snap = await db.ref(`playerSessions/${nickname}`).once("value");
+  const prevRoom = snap.val();
+  if (prevRoom && (await db.ref(`rooms/${prevRoom}`).once("value")).exists()) {
+    joinRoom(prevRoom); return;
+  }
+  if (prevRoom) db.ref(`playerSessions/${nickname}`).remove();
+
+  if (roomIdFromLink) {
+    if ((await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists()) {
+      joinRoom(roomIdFromLink); return;
+    }
+    alert("Комната уже не существует"); showLobby(); return;
+  }
+
+  showLobby();
+}
+
+function showLobby() {
+  ["login","game"].forEach(id => document.getElementById(id).style.display = "none");
+  document.getElementById("lobby").style.display = "block";
+}
+
+/******************* Lobby actions ********************/
+async function createNewRoom() {
+  let code, attempts = 0;
+  do { code = Math.floor(100000 + Math.random()*900000).toString(); }
+  while ((await db.ref(`rooms/${code}`).once("value")).exists() && ++attempts<10);
+  if (attempts===10) return alert("Не удалось создать комнату, попробуйте ещё");
+  currentRoomId = code;
+  joinRoom(code, true);
+}
+
+async function joinRoomByCode() {
+  const code = document.getElementById("room-code-input")?.value.trim();
+  if (!/^\d{6}$/.test(code)) return alert("Введите корректный 6-значный код");
+  if (!(await db.ref(`rooms/${code}`).once("value")).exists())
+    return alert("Комната не найдена");
+  joinRoom(code);
+}
+
+/******************* Core room handshake ********************/
+function joinRoom(roomId, isHost = false) {
+  currentRoomId = roomId;
+
+  document.getElementById("login").style.display  = "none";
+  document.getElementById("lobby").style.display  = "none";
+  document.getElementById("game").style.display   = "block";
+
+  const btn = document.getElementById("invite-btn");
+  if (btn) {
+    const bot = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
+    const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;
+    btn.onclick = () => Telegram.WebApp.openTelegramLink(link);
+    btn.style.display = "block";
+  }
+
+  db.ref(`rooms/${roomId}/players/${nickname}`).set({score:0});
+  db.ref(`playerSessions/${nickname}`).set(roomId);
+
+  if (isHost) initializeGame();
+
+  db.ref(`rooms/${roomId}/game/cards`)
+    .on("value", snap => drawBoard(snap.val() || []));
+  db.ref(`rooms/${roomId}/players`)
+    .on("value", snap => {
+      const list = Object.entries(snap.val()||{})
+        .map(([n,{score=0}])=>`${n}: ${score}`).join("  ");
+      document.getElementById("players").innerHTML = list;
+    });
+
+  if (!resizeObserver) {
+    const box = document.getElementById("board-container");
+    if (box && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        if (layoutTimeout) clearTimeout(layoutTimeout);
+        layoutTimeout = setTimeout(() => requestAnimationFrame(layoutCards), 200);
+      });
+      resizeObserver.observe(box);
+    }
+  }
+
+  let attempt = 0;
+  const ensureLayout = () => {
+    requestAnimationFrame(layoutCards);
+    if (attempt++ < 3 && document.getElementById("board").children.length > 0) {
       setTimeout(ensureLayout, 200);
     }
   };
@@ -162,7 +314,7 @@ function joinRoom(roomId, isHost = false) {
 
 /******************* Game lifecycle ********************/
 function initializeGame() {
-  db.ref(`rooms/${currentRoomId}/players`).remove();      // reset scores
+  db.ref(`rooms/${currentRoomId}/players`).remove();
 
   const deck = [];
   for (let c=0;c<3;c++) for (let s=0;s<3;s++)
@@ -231,43 +383,60 @@ function drawBoard(cards) {
   const board = document.getElementById("board");
   board.innerHTML = "";
 
-  // инфо-бар (код комнаты + счётчик сетов)
+  // Update info bar
   document.getElementById("room-code-display").innerText = `Код комнаты: ${currentRoomId}`;
-  document.getElementById("sets-count").innerText        = `Возможных SET-ов: ${countSets(cards)}`;
+  document.getElementById("sets-count").innerText = `Возможных SET-ов: ${countSets(cards)}`;
 
-  cards.forEach((card,idx) => {
-    const div = document.createElement("div");
-    div.className = "card";
-    if (selected.includes(idx)) div.classList.add("selected");
-    div.onclick = () => selectCard(idx);
+  // Create rows of exactly 4 cards
+  const cardsPerRow = 4;
+  for (let i = 0; i < cards.length; i += cardsPerRow) {
+    const row = document.createElement("div");
+    row.className = "card-row";
+    row.style.display = "flex";
+    row.style.justifyContent = "center";
+    row.style.gap = "8px";
+    row.style.marginBottom = "8px";
 
-    const [color,shape,fill,count] = card, colTxt = COLORS[color];
-    for (let n=0;n<count;n++) {
-      const el = document.createElement("div");
-      el.className = "symbol";
-      el.innerHTML = getSVG(shape, fill, colTxt);
-      div.appendChild(el);
+    // Add up to 4 cards per row
+    for (let j = 0; j < cardsPerRow && i + j < cards.length; j++) {
+      const idx = i + j;
+      const card = cards[idx];
+      const div = document.createElement("div");
+      div.className = "card";
+      if (selected.includes(idx)) div.classList.add("selected");
+      div.onclick = () => selectCard(idx);
+
+      const [color, shape, fill, count] = card;
+      const colTxt = COLORS[color];
+家人
+      for (let n = 0; n < count; n++) {
+        const el = document.createElement("div");
+        el.className = "symbol";
+        el.innerHTML = getSVG(shape, fill, colTxt);
+        div.appendChild(el);
+      }
+      row.appendChild(div);
     }
-    board.appendChild(div);
-  });
+    board.appendChild(row);
+  }
 
-  // Ensure layout is applied after DOM updates
+  // Trigger layout after DOM updates
   if (layoutTimeout) clearTimeout(layoutTimeout);
   layoutTimeout = setTimeout(() => requestAnimationFrame(layoutCards), 100);
 }
 
 function layoutCards() {
-  const GAP = 8; // Consistent with CSS gap
-  const MIN_CARD_WIDTH = 60; // Minimum card width for usability
-  const MAX_CARD_WIDTH = 100; // Max width to prevent oversized cards
-  const MIN_COLUMNS = 4; // Enforce minimum 4 cards per row
+  const GAP = 8; // Matches CSS gap
+  const MIN_CARD_WIDTH = 60;
+  const MAX_CARD_WIDTH = 100;
+  const FIXED_COLUMNS = 4; // Enforce exactly 4 columns
   const board = document.getElementById("board");
   const box = document.getElementById("board-container");
-  const N = board.children.length;
+  const N = board.children.length * FIXED_COLUMNS; // Total cards (rows * 4)
 
   if (!N || !box) return;
 
-  // Force reflow and use getBoundingClientRect for accurate width
+  // Force reflow and get accurate container width
   box.offsetWidth;
   const rect = box.getBoundingClientRect();
   const paddingX = parseFloat(getComputedStyle(box).paddingLeft) + parseFloat(getComputedStyle(box).paddingRight);
@@ -275,61 +444,75 @@ function layoutCards() {
   const W = rect.width - paddingX;
   const H = rect.height - paddingY;
 
-  // Debug log to diagnose column issues
-  console.log(`layoutCards: rect.width=${rect.width}, W=${W}, H=${H}, N=${N}`);
+  console.log(`layoutCards: container width=${rect.width}, W=${W}, H=${H}, total cards=${N}`);
 
-  // Calculate number of columns, prioritizing at least 4
-  const minWidthRequired = MIN_COLUMNS * MIN_CARD_WIDTH + (MIN_COLUMNS - 1) * GAP;
-  let cols = W >= minWidthRequired ? Math.max(MIN_COLUMNS, Math.floor(W / (MIN_CARD_WIDTH + GAP))) : Math.max(2, Math.floor(W / (MIN_CARD_WIDTH + GAP)));
-  let cardW = (W - GAP * (cols - 1)) / cols;
-  cardW = Math.min(Math.max(cardW, MIN_CARD_WIDTH), MAX_CARD_WIDTH); // Clamp card width
-  const cardH = cardW * 1.5; // Maintain 2:3 aspect ratio
-  const rows = Math.ceil(N / cols);
+  // Calculate card size for exactly 4 columns
+  let cardW = (W - GAP * (FIXED_COLUMNS - 1)) / FIXED_COLUMNS;
+  cardW = Math.min(Math.max(cardW, MIN_CARD_WIDTH), MAX_CARD_WIDTH);
+  const cardH = cardW * 1.5; // 2:3 aspect ratio
+  const rows = Math.ceil(N / FIXED_COLUMNS);
   const totalH = rows * cardH + GAP * (rows - 1);
 
-  // Debug log for calculated values
-  console.log(`layoutCards: cols=${cols}, cardW=${cardW}, cardH=${cardH}, rows=${rows}, totalH=${totalH}`);
+  console.log(`layoutCards: cols=${FIXED_COLUMNS}, cardW=${cardW}, cardH=${cardH}, rows=${rows}, totalH=${totalH}`);
 
-  // Enable scrolling if content height exceeds container height
+  // Enable scrolling if needed
   box.style.overflowY = totalH > H ? "auto" : "hidden";
 
-  // Apply styles to board for centering and consistent layout
-  board.style.display = "flex !important";
-  board.style.flexWrap = "wrap !important";
-  board.style.gap = `${GAP}px !important`;
-  board.style.width = `${cols * cardW + (cols - 1) * GAP}px !important`;
+  // Style the board
+  board.style.width = `${FIXED_COLUMNS * cardW + (FIXED_COLUMNS - 1) * GAP}px`;
   board.style.margin = "0 auto";
-  board.style.alignContent = "flex-start !important";
+  board.style.display = "block";
 
-  // Apply card sizes
-  Array.from(board.children).forEach(card => {
-    card.style.width = `${cardW}px !important`;
-    card.style.height = `${cardH}px !important`;
-    card.style.minWidth = `${cardW}px !important`;
-    card.style.minHeight = `${cardH}px !important`;
-    card.style.boxSizing = "border-box !important";
+  // Style each row
+  Array.from(board.children).forEach(row => {
+    row.style.width = `${FIXED_COLUMNS * cardW + (FIXED_COLUMNS - 1) * GAP}px`;
+    row.style.display = "flex";
+    row.style.gap = `${GAP}px`;
+    row.style.marginBottom = `${GAP}px`;
+
+    // Style each card in the row
+    Array.from(row.children).forEach(card => {
+      card.style.width = `${cardW}px`;
+      card.style.height = `${cardH}px`;
+      card.style.minWidth = `${cardW}px`;
+      card.style.minHeight = `${cardH}px`;
+      card.style.boxSizing = "border-box";
+    });
   });
 }
 
 /******************* Helpers ********************/
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
-function countSets(c){
-  let n=c.length,res=0;if(n<3)return 0;
-  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)for(let k=j+1;k<n;k++){
-    if([0,1,2,3].every(p=>{const s=new Set([c[i][p],c[j][p],c[k][p]]);return s.size===1||s.size===3}))res++;
-  }return res;
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
 }
 
-/* SVG-генератор: shape 0=овал, 1=ромб, 2=волна; fill 0=пустой, 1=штрих, 2=заливка */
+function countSets(c) {
+  let n = c.length, res = 0;
+  if (n < 3) return 0;
+  for (let i = 0; i < n; i++)
+    for (let j = i + 1; j < n; j++)
+      for (let k = j + 1; k < n; k++) {
+        if ([0, 1, 2, 3].every(p => {
+          const s = new Set([c[i][p], c[j][p], c[k][p]]);
+          return s.size === 1 || s.size === 3;
+        })) res++;
+      }
+  return res;
+}
+
 function getSVG(shape, fill, color) {
   const pid = `pat-${color}-${Math.random().toString(36).slice(2)}`,
         fillAttr = {0:"none",1:`url(#${pid})`,2:color}[fill],
-        stroke = color, pat = `<pattern id="${pid}" width="4" height="4" patternUnits="userSpaceOnUse">
+        stroke = color,
+        pat = `<pattern id="${pid}" width="4" height="4" patternUnits="userSpaceOnUse">
     <path d="M0 0 l4 4" stroke="${color}" stroke-width="1"/></pattern>`;
   const wrap = (body) => `<svg viewBox="0 0 100 50"><defs>${fill===1?pat:""}</defs>${body}</svg>`;
-  if (shape===0) return wrap(`<ellipse cx="50" cy="25" rx="40" ry="15" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
-  if (shape===1) return wrap(`<polygon points="50,5 95,25 50,45 5,25" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
-  if (shape===2) return wrap(`<path d="M10 35 Q25 15 40 35 Q55 15 70 35 Q85 15 90 35 L90 45 Q85 45 70 45 Q55 45 40 45 Q25 45 10 45 Z"
+  if (shape === 0) return wrap(`<ellipse cx="50" cy="25" rx="40" ry="15" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+  if (shape === 1) return wrap(`<polygon points="50,5 95,25 50,45 5,25" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+  if (shape === 2) return wrap(`<path d="M10 35 Q25 15 40 35 Q55 15 70 35 Q85 15 90 35 L90 45 Q85 45 70 45 Q55 45 40 45 Q25 45 10 45 Z"
                       fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
   return "";
 }
