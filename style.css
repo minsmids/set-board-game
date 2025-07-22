@@ -92,8 +92,8 @@ body {
   grid-template-rows: repeat(3, 1fr); /* Enforce 3 rows for 12 cards */
   gap: 10px;
   padding: 10px;
-  width: 100%;
-  max-width: 1200px; /* Prevent overly wide boards on large screens */
+  width: min(100vw, 414px); /* Fix width for Telegram viewport */
+  max-width: 414px; /* Cap at typical mobile width */
   min-height: 0; /* Allow shrinking within flex container */
   box-sizing: border-box;
 }
@@ -101,7 +101,7 @@ body {
 /* ===== Card ===== */
 .card {
   aspect-ratio: 2 / 3;
-  width: 100%; /* Cards take full width of their grid cell */
+  width: calc((min(100vw, 414px) - 30px) / 4); /* Account for 10px gap and 10px padding */
   background: var(--secondary-bg);
   border: 2px solid var(--hint);
   border-radius: 8px;
@@ -112,17 +112,23 @@ body {
   align-items: center;
   box-sizing: border-box;
   cursor: pointer;
-  transition: transform 0.08s ease, border-color 0.08s ease;
+  transition: border-color 0.08s ease, box-shadow 0.08s ease;
 }
 
-.card:hover    { border-color: var(--link); }
+.card:hover {
+  border-color: var(--link);
+}
+
 .card.selected {
   border-color: var(--link);
-  transform: scale(1.05);
+  border-width: 4px; /* Thicker border instead of scaling */
   box-shadow: 0 0 10px rgba(0,123,255,.45);
 }
 
-.symbol { width: 80%; height: auto; }
+.symbol {
+  width: 80%;
+  height: auto;
+}
 
 /* ===== Buttons & inputs ===== */
 button {
@@ -134,8 +140,14 @@ button {
   color: var(--button-text);
   cursor: pointer;
 }
-button:hover  { filter: brightness(0.9); }
-button:active { transform: scale(0.98); }
+
+button:hover {
+  filter: brightness(0.9);
+}
+
+button:active {
+  transform: scale(0.98);
+}
 
 input[type="text"]{
   padding: 10px;
