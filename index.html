@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <title>SET Multiplayer</title>
 
-  <!-- мобильный web-view Telegram -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <!-- (опционально) окраска шапки/фона в цвет темы -->
+  <!-- Telegram Web-view -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#ffffff" />
 
   <link rel="stylesheet" href="style.css" />
@@ -14,34 +14,34 @@
   <!-- SDK Telegram Web App -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Firebase v8 (сначала app, затем database) -->
+  <!-- Firebase v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- ваш bundle игры (лучше defer, чтобы подождал DOM) -->
   <script defer src="set-game.js"></script>
 </head>
 
 <body>
-  <!-- Форма логина для обычного браузера -->
+  <!-- login for external browser -->
   <div id="login">
     <input type="text" id="nickname" placeholder="Enter your name" />
     <button onclick="manualLogin()">Play</button>
   </div>
 
-    <!-- Лобби для создания/присоединения к комнатам -->
+  <!-- lobby -->
   <div id="lobby" style="display:none">
-      <button onclick="createNewRoom()">Создать новую игру</button>
-      <div style="margin-top: 20px;">
-          <input type="text" id="room-code-input" placeholder="Введите код комнаты (6 цифр)" maxlength="6" />
-          <button onclick="joinRoomByCode()">Присоединиться по коду</button>
-      </div>
+    <button onclick="createNewRoom()">Создать новую игру</button>
+    <div style="margin-top:20px">
+      <input type="text" id="room-code-input"
+             placeholder="Введите код комнаты (6 цифр)" maxlength="6" />
+      <button onclick="joinRoomByCode()">Присоединиться по коду</button>
+    </div>
   </div>
 
-  <!-- Основной игровой экран -->
+  <!-- main game screen -->
   <div id="game" style="display:none">
     <div id="info">
-      <div id="room-code-display"></div> <!-- Добавлен элемент для кода комнаты -->
+      <div id="room-code-display"></div>
       <div id="players"></div>
       <div id="sets-count"></div>
     </div>
@@ -51,7 +51,7 @@
     </div>
 
     <div id="controls">
-      <button id="invite-btn" style="display: none;">Пригласить</button>
+      <button id="invite-btn" style="display:none">Пригласить</button>
       <button onclick="addMoreCards()">+3 карты</button>
       <button onclick="newGame()">Новая игра</button>
       <button onclick="endGame()">Завершить игру</button>
