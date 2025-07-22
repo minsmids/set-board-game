@@ -1,144 +1,54 @@
+/* style.css */
+
 /* ===== Telegram-friendly baseline ===== */
 :root {
-  /* Dynamic colors from Telegram themes with fallbacks */
-  --bg:            var(--tg-theme-bg-color, #f0f0f0);
-  --text:          var(--tg-theme-text-color, #333);
-  --hint:          var(--tg-theme-hint-color, #888);
-  --link:          var(--tg-theme-link-color, #007bff);
-  --button:        var(--tg-theme-button-color, #007bff);
-  --button-text:   var(--tg-theme-button-text-color, #fff);
-  --secondary-bg:  var(--tg-theme-secondary-bg-color, #fff);
+  --bg: var(--tg-theme-bg-color, #f0f0f0);
+  --text: var(--tg-theme-text-color, #333);
+  --hint: var(--tg-theme-hint-color, #888);
+  --link: var(--tg-theme-link-color, #007bff);
+  --button: var(--tg-theme-button-color, #007bff);
+  --button-text: var(--tg-theme-button-text-color, #fff);
+  --secondary-bg: var(--tg-theme-secondary-bg-color, #fff);
 }
 
-/* динамический viewport: 100dvh поддерживается iOS 15.4+ / Android 12+  */
 html,
 body {
   height: 100dvh;
-  /* fallback для старых движков Safari/Chrome: */
-  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-}
-
-body {
-  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  margin: 0;
+  padding: 0;
   background: var(--bg);
   color: var(--text);
-  margin: 0;
-  padding: env(safe-area-inset-top,0) env(safe-area-inset-right,0)
-           env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
-  box-sizing: border-box;
-  overscroll-behavior-y: none;          /* отключаем pull-to-refresh */
+  font-family: sans-serif;
 }
 
-/* ================= Layouts ================= */
-#login,
-#lobby {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 12px;
-}
-
-/* flex-колонка: шапка — центр — подвал */
-#game {
+/* Make #app behave as flex container at full height */
+#app {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-/* ===== Top / bottom bars ===== */
-#info,
-#controls {
-  flex: 0 0 auto;            /* не сжимать */
-  box-sizing: border-box;
-}
-
-#info {
-  padding: calc(6px + env(safe-area-inset-top,0)) 10px 6px;
-  text-align: center;
-  font-size: 0.9rem;
-  background: var(--secondary-bg);
-  color: var(--hint);
-  border-bottom: 1px solid var(--hint);
-}
-
-#room-code-display { font-weight: 600; margin-bottom: 2px; }
-#sets-count       { margin-top: 4px; font-weight: 600; color: var(--text); }
-
-#controls {
-  padding: 10px 10px calc(10px + env(safe-area-inset-bottom,0));
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  background: var(--bg);
-  border-top: 1px solid var(--hint);
-}
-
-/* ===== Central board area ===== */
 #board-container {
-  flex: 1 1 0%;
-  min-height: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center; /* Center vertically for consistent layout */
-  overflow: hidden;
+  flex: 1;
+  overflow: auto;
 }
 
 #board {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(3, 1fr); /* Enforce 3 rows for 12 cards */
-  gap: 10px;
-  padding: 10px;
-  width: min(100vw, 414px); /* Fix width for Telegram viewport */
-  max-width: 414px; /* Cap at typical mobile width */
-  min-height: 0; /* Allow shrinking within flex container */
-  box-sizing: border-box;
+  gap: 8px;
+  padding: 16px;
 }
 
-/* ===== Card ===== */
-.card {
-  aspect-ratio: 2 / 3;
-  width: calc((min(100vw, 414px) - 30px) / 4); /* Account for 10px gap and 10px padding */
-  background: var(--secondary-bg);
-  border: 2px solid var(--hint);
-  border-radius: 8px;
-  padding: 4% 2%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  align-items: center;
-  box-sizing: border-box;
-  cursor: pointer;
-  transition: border-color 0.08s ease, box-shadow 0.08s ease;
-}
-
-.card:hover {
-  border-color: var(--link);
-}
-
-.card.selected {
-  border-color: var(--link);
-  border-width: 4px; /* Thicker border instead of scaling */
-  box-shadow: 0 0 10px rgba(0,123,255,.45);
-}
-
-.symbol {
-  width: 80%;
-  height: auto;
-}
-
-/* ===== Buttons & inputs ===== */
 button {
-  padding: 10px 15px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 6px;
   background: var(--button);
   color: var(--button-text);
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 1rem;
   cursor: pointer;
+  margin: 4px 0;
 }
 
 button:hover {
@@ -149,10 +59,11 @@ button:active {
   transform: scale(0.98);
 }
 
-input[type="text"]{
+input[type="text"] {
   padding: 10px;
   font-size: 1rem;
   border: 1px solid var(--hint);
   border-radius: 6px;
-  width: 220px;
+  width: 100%;
+  margin-bottom: 8px;
 }
