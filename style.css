@@ -105,7 +105,7 @@ body {
 
 /* ===== Card ===== */
 .card {
-  aspect-ratio: 2 / 3;           /* пропорции; размер даёт JS */
+  
   background: var(--secondary-bg);
   border: 2px solid var(--hint);
   border-radius: 8px;
