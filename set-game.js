@@ -218,30 +218,6 @@ function drawBoard(cards) {
     board.appendChild(div);
   });
 
-  layoutCards();                        // подгоняем размеры без скролла
-}
-
-function layoutCards() {
-  const GAP=10, board=document.getElementById("board"),
-        box=document.getElementById("board-container"),
-        N=board.children.length;
-  if (!N) return;
-
-  const W=box.clientWidth, H=box.clientHeight;
-  let bestCols=1,bestW=W;
-
-  for (let cols=1; cols<=N; cols++) {                        // 
-    const w=(W-GAP*(cols-1))/cols, h=w*3/2,
-          rows=Math.ceil(N/cols), needH=rows*h+GAP*(rows-1);
-    if (needH<=H) { bestCols=cols; bestW=w; break; }
-  }
-  [...board.children].forEach(el=>{
-    el.style.width  = `${bestW}px`;
-    el.style.height = `${bestW*3/2}px`;
-  });
-}
-window.addEventListener("resize", layoutCards);
-
 /******************* Helpers ********************/
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
 function countSets(c){
