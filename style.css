@@ -1,3 +1,4 @@
+
 /* ===== Telegram-friendly baseline ===== */
 :root {
   /* Dynamic colors from Telegram themes with fallbacks */
@@ -111,6 +112,12 @@ body {
   transition: transform 0.08s ease, border-color 0.08s ease;
 }
 
+.card > .symbol svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .card:hover    { border-color: var(--link); }
 .card.selected {
   border-color: var(--link);
@@ -118,7 +125,11 @@ body {
   box-shadow: 0 0 10px rgba(0,123,255,.45);
 }
 
-.symbol { width: 80%; height: auto; }
+.symbol {
+  width: 80%;
+  height: auto;
+  max-height: 30%; /* чтобы не выходило за рамки карточки */
+}
 
 /* ===== Buttons & inputs ===== */
 button {
