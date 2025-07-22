@@ -176,7 +176,7 @@ function joinRoom(roomId, isHost = false) {
     // Update invite button
     const inviteButton = document.getElementById("invite-btn");
     if (inviteButton) {
-        const botUsername = Telegram.WebApp.initDataUnsafe.bot_username || "your_bot"; // Fallback for testing
+        const botUsername = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot"; // Fallback for testing
         const inviteLink = `https://t.me/${botUsername}/setgame?startapp=${currentRoomId}`;
         inviteButton.onclick = () => Telegram.WebApp.openTelegramLink(inviteLink);
         inviteButton.style.display = "block";
