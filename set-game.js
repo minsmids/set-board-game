@@ -34,6 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tg.ready(); tg.expand();
 
     const u = tg.initDataUnsafe.user;
+    console.log("Telegram user data:", u); // Add this line for debugging
     nickname = u.username || `${u.first_name || "user"}_${u.id}`;
 
     loginUser(tg.initDataUnsafe.start_param);   // если пришли по приглашению
