@@ -1,5 +1,4 @@
 /* style.css */
-
 /* ===== Telegram-friendly baseline ===== */
 :root {
   --bg: var(--tg-theme-bg-color, #f0f0f0);
@@ -21,11 +20,17 @@ body {
   font-family: sans-serif;
 }
 
-/* Make #app behave as flex container at full height */
 #app {
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+/* Скрываем блоки по умолчанию, управление через inline-стили */
+#login,
+#lobby,
+#game {
+  width: 100%;
 }
 
 #board-container {
@@ -40,6 +45,13 @@ body {
   padding: 16px;
 }
 
+#controls {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  background: var(--secondary-bg);
+}
+
 button {
   background: var(--button);
   color: var(--button-text);
@@ -48,7 +60,6 @@ button {
   padding: 10px 16px;
   font-size: 1rem;
   cursor: pointer;
-  margin: 4px 0;
 }
 
 button:hover {
@@ -65,5 +76,11 @@ input[type="text"] {
   border: 1px solid var(--hint);
   border-radius: 6px;
   width: 100%;
-  margin-bottom: 8px;
+}
+
+#players,
+#room-code-display,
+#sets-count {
+  padding: 8px 16px;
+  font-size: 0.9rem;
 }
