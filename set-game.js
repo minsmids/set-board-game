@@ -7,7 +7,7 @@
 
 /******************* Firebase CONFIG ********************/
 const firebaseConfig = {
-  apiKey: "AIzaSy…",                     // ←--­ свои ключи
+  apiKey: "AIzaSy…",  // ←— замените на свои ключи
   authDomain: "set-telegram.firebaseapp.com",
   databaseURL: "https://set-telegram-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "set-telegram",
@@ -30,13 +30,14 @@ const COLORS       = ["red", "green", "purple"];
 document.addEventListener("DOMContentLoaded", () => {
   const tg = window.Telegram?.WebApp;
 
-  if (tg && tg.initDataUnsafe?.user) {          // запущено в Telegram
-    tg.ready(); tg.expand();
+  if (tg && tg.initDataUnsafe?.user) {  // запущено в Telegram
+    tg.ready();
+    tg.expand();
 
     const u = tg.initDataUnsafe.user;
     nickname = u.username || `${u.first_name || "user"}_${u.id}`;
 
-    loginUser(tg.initDataUnsafe.start_param);   // если пришли по приглашению
+    loginUser(tg.initDataUnsafe.start_param);  // если пришли по приглашению
   } else {
     document.getElementById("login").style.display = "block"; // обычный браузер
   }
@@ -54,16 +55,20 @@ async function loginUser(roomIdFromLink = null) {
   const snap = await db.ref(`playerSessions/${nickname}`).once("value");
   const prevRoom = snap.val();
   if (prevRoom && (await db.ref(`rooms/${prevRoom}`).once("value")).exists()) {
-    joinRoom(prevRoom); return;
+    joinRoom(prevRoom);
+    return;
   }
-  if (prevRoom) db.ref(`playerSessions/${nickname}`).remove();   // зачистить «битую» сессию
+  if (prevRoom) db.ref(`playerSessions/${nickname}`).remove();  // зачистить «битую» сессию
 
   // 2) если пришли по приглашению
   if (roomIdFromLink) {
     if ((await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists()) {
-      joinRoom(roomIdFromLink); return;
+      joinRoom(roomIdFromLink);
+      return;
     }
-    alert("Комната уже не существует"); showLobby(); return;
+    alert("Комната уже не существует");
+    showLobby();
+    return;
   }
 
   // 3) новый пользователь – показываем лобби
@@ -71,16 +76,21 @@ async function loginUser(roomIdFromLink = null) {
 }
 
 function showLobby() {
-  ["login","game"].forEach(id => document.getElementById(id).style.display = "none");
+  ["login", "game"].forEach(id => document.getElementById(id).style.display = "none");
   document.getElementById("lobby").style.display = "block";
 }
 
 /******************* Lobby actions ********************/
 async function createNewRoom() {
   let code, attempts = 0;
-  do { code = Math.floor(100000 + Math.random()*900000).toString(); }           // 6-digits
-  while ((await db.ref(`rooms/${code}`).once("value")).exists() && ++attempts<10);
-  if (attempts===10) return alert("Не удалось создать комнату, попробуйте ещё");
+  do {
+    code = Math.floor(100000 + Math.random() * 900000).toString();
+  } while ((await db.ref(`rooms/${code}`).once("value")).exists() && ++attempts < 10);
+
+  if (attempts === 10) {
+    alert("Не удалось создать комнату, попробуйте ещё");
+    return;
+  }
   currentRoomId = code;
   joinRoom(code, true);
 }
@@ -101,20 +111,17 @@ function joinRoom(roomId, isHost = false) {
   document.getElementById("lobby").style.display  = "none";
   document.getElementById("game").style.display   = "block";
 
-  /* приглашение – ссылка вида
-     https://t.me/<bot>/setgame?startapp=<roomId>                         */
   // вместо кнопки — показываем ссылку для копирования
   const linkInput = document.getElementById("invite-link");
   if (linkInput) {
-    const bot = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
+    const bot  = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
     const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;
     linkInput.value = link;
     linkInput.style.display = "block";
-    // по клику выделяем весь текст для удобного копирования
     linkInput.onclick = () => linkInput.select();
   }
 
-  db.ref(`rooms/${roomId}/players/${nickname}`).set({score:0});
+  db.ref(`rooms/${roomId}/players/${nickname}`).set({ score: 0 });
   db.ref(`playerSessions/${nickname}`).set(roomId);
 
   if (isHost) initializeGame();
@@ -123,35 +130,39 @@ function joinRoom(roomId, isHost = false) {
     .on("value", snap => drawBoard(snap.val() || []));
   db.ref(`rooms/${roomId}/players`)
     .on("value", snap => {
-      const list = Object.entries(snap.val()||{})
-        .map(([n,{score=0}])=>`${n}: ${score}`).join("  ");
-      document.getElementById("players").innerHTML = list;
+      const list = Object.entries(snap.val() || {})
+        .map(([n, { score = 0 }]) => `${n}: ${score}`)
+        .join("  ");
+      document.getElementById("players").innerText = list;
     });
 }
 
 /******************* Game lifecycle ********************/
 function initializeGame() {
-  db.ref(`rooms/${currentRoomId}/players`).remove();      // reset scores
+  db.ref(`rooms/${currentRoomId}/players`).remove();  // reset scores
 
   const deck = [];
-  for (let c=0;c<3;c++) for (let s=0;s<3;s++)
-    for (let f=0;f<3;f++) for (let n=1;n<=3;n++) deck.push([c,s,f,n]);
+  for (let c = 0; c < 3; c++)
+    for (let s = 0; s < 3; s++)
+      for (let f = 0; f < 3; f++)
+        for (let n = 1; n <= 3; n++)
+          deck.push([c, s, f, n]);
   shuffle(deck);
 
   db.ref(`rooms/${currentRoomId}/game`).set({
-    cards          : deck.splice(0,12),
-    availableCards : deck
+    cards: deck.splice(0, 12),
+    availableCards: deck
   });
   selected = [];
 }
 
-function newGame()        { if (confirm("Новая партия?")) initializeGame(); }
-function addMoreCards()   {
+function newGame()      { if (confirm("Новая партия?")) initializeGame(); }
+function addMoreCards() {
   db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
-    const {cards=[],availableCards:avail=[]} = snap.val()||{};
-    if (avail.length<3) return alert("Нет больше карт!");
+    const { cards = [], availableCards: avail = [] } = snap.val() || {};
+    if (avail.length < 3) return alert("Нет больше карт!");
     db.ref(`rooms/${currentRoomId}/game`).update({
-      cards: [...cards, ...avail.splice(0,3)],
+      cards: [...cards, ...avail.splice(0, 3)],
       availableCards: avail
     });
   });
@@ -159,40 +170,48 @@ function addMoreCards()   {
 
 /******************* Interaction ********************/
 function selectCard(idx) {
-  selected = selected.includes(idx) ? selected.filter(i=>i!==idx) : [...selected, idx];
+  selected = selected.includes(idx)
+    ? selected.filter(i => i !== idx)
+    : [...selected, idx];
   if (selected.length === 3) checkSet();
-  else db.ref(`rooms/${currentRoomId}/game/cards`).once("value", s => drawBoard(s.val()));
+  else db.ref(`rooms/${currentRoomId}/game/cards`)
+         .once("value", s => drawBoard(s.val()));
 }
 
 function checkSet() {
   db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
-    const {cards=[],availableCards:avail=[]} = snap.val()||{};
-    const [a,b,c] = selected.map(i => cards[i]);
-    const isSet   = [0,1,2,3].every(i => {
-      const s = new Set([a[i],b[i],c[i]]); return s.size===1 || s.size===3;
+    const { cards = [], availableCards: avail = [] } = snap.val() || {};
+    const [a, b, c] = selected.map(i => cards[i]);
+    const isSet = [0, 1, 2, 3].every(i => {
+      const s = new Set([a[i], b[i], c[i]]);
+      return s.size === 1 || s.size === 3;
     });
 
     if (isSet) {
       let newCards = [...cards];
-      selected.sort((x,y)=>y-x).forEach(i=>newCards.splice(i,1));
-      if (newCards.length<12 && avail.length>=3)
-        newCards = [...newCards, ...avail.splice(0,3)],
+      selected.sort((x, y) => y - x).forEach(i => newCards.splice(i, 1));
+      if (newCards.length < 12 && avail.length >= 3) {
+        newCards = [...newCards, ...avail.splice(0, 3)];
         db.ref(`rooms/${currentRoomId}/game/availableCards`).set(avail);
-
+      }
       db.ref(`rooms/${currentRoomId}/game/cards`).set(newCards);
       db.ref(`rooms/${currentRoomId}/players/${nickname}/score`)
-        .transaction(s => (s||0)+1);
+        .transaction(s => (s || 0) + 1);
       Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light");
-    } else alert("Это не SET");
+    } else {
+      alert("Это не SET");
+    }
 
     selected = [];
-    db.ref(`rooms/${currentRoomId}/game/cards`).once("value", s => drawBoard(s.val()));
+    db.ref(`rooms/${currentRoomId}/game/cards`)
+      .once("value", s => drawBoard(s.val()));
   });
 }
 
 function endGame() {
-  if (confirm("Завершить игру и удалить комнату?"))
+  if (confirm("Завершить игру и удалить комнату?")) {
     db.ref(`rooms/${currentRoomId}`).remove().then(showLobby);
+  }
 }
 
 /******************* Rendering ********************/
@@ -204,7 +223,7 @@ function drawBoard(cardsData) {
   // Convert Firebase data (object) to array if needed
   const cards = Array.isArray(cardsData)
     ? cardsData
-    : cardsData && typeof cardsData === 'object'
+    : cardsData && typeof cardsData === "object"
       ? Object.values(cardsData)
       : [];
 
@@ -230,31 +249,44 @@ function drawBoard(cardsData) {
       el.innerHTML = getSVG(shape, fill, colTxt);
       div.appendChild(el);
     }
-
     board.appendChild(div);
-    console.log(`Card ${idx} appended to board.`);
   });
 }
 
 /******************* Helpers ********************/
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
-function countSets(c){
-  let n=c.length,res=0;if(n<3)return 0;
-  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)for(let k=j+1;k<n;k++){
-    if([0,1,2,3].every(p=>{const s=new Set([c[i][p],c[j][p],c[k][p]]);return s.size===1||s.size===3}))res++;
-  }return res;
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+}
+
+function countSets(c) {
+  let n = c.length, res = 0;
+  if (n < 3) return 0;
+  for (let i = 0; i < n; i++)
+    for (let j = i + 1; j < n; j++)
+      for (let k = j + 1; k < n; k++) {
+        if ([0,1,2,3].every(p => {
+          const s = new Set([c[i][p], c[j][p], c[k][p]]);
+          return s.size === 1 || s.size === 3;
+        })) res++;
+      }
+  return res;
 }
 
 /* SVG-генератор: shape 0=овал, 1=ромб, 2=волна; fill 0=пустой, 1=штрих, 2=заливка */
 function getSVG(shape, fill, color) {
-  const pid = `pat-${color}-${Math.random().toString(36).slice(2)}`,
-        fillAttr = {0:"none",1:`url(#${pid})`,2:color}[fill],
-        stroke = color, pat = `<pattern id="${pid}" width="4" height="4" patternUnits="userSpaceOnUse">
-    <path d="M0 0 l4 4" stroke="${color}" stroke-width="1"/></pattern>`;
-  const wrap = (body) => `<svg viewBox="0 0 100 50"><defs>${fill===1?pat:""}</defs>${body}</svg>`;
-  if (shape===0) return wrap(`<ellipse cx="50" cy="25" rx="40" ry="15" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
-  if (shape===1) return wrap(`<polygon points="50,5 95,25 50,45 5,25" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
-  if (shape===2) return wrap(`<path d="M10 35 Q25 15 40 35 Q55 15 70 35 Q85 15 90 35 L90 45 Q85 45 70 45 Q55 45 40 45 Q25 45 10 45 Z"
-                      fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+  const pid      = `pat-${color}-${Math.random().toString(36).slice(2)}`,
+        fillAttr = {0: "none", 1: `url(#${pid})`, 2: color}[fill],
+        stroke   = color,
+        pat      = `<pattern id="${pid}" width="4" height="4" patternUnits="userSpaceOnUse">
+                      <path d="M0 0 l4 4" stroke="${color}" stroke-width="1"/>
+                    </pattern>`;
+  const wrap = body => `<svg viewBox="0 0 100 50"><defs>${fill === 1 ? pat : ""}</defs>${body}</svg>`;
+
+  if (shape === 0) return wrap(`<ellipse cx="50" cy="25" rx="40" ry="15" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+  if (shape === 1) return wrap(`<polygon points="50,5 95,25 50,45 5,25" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+  if (shape === 2) return wrap(`<path d="M10 35 Q25 15 40 35 Q55 15 70 35 Q85 15 90 35 L90 45 Q85 45 70 45 Q55 45 40 45 Q25 45 10 45 Z" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
   return "";
 }

@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -13,54 +14,29 @@
 
   <!-- SDK Telegram Web App -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <!-- Firebase v8 -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <script defer src="set-game.js"></script>
 </head>
-
 <body>
-  <!-- login for external browser -->
-  <div id="login">
-    <input type="text" id="nickname" placeholder="Enter your name" />
-    <button onclick="manualLogin()">Play</button>
-  </div>
-
-  <!-- lobby -->
-  <div id="lobby" style="display:none">
-    <button onclick="createNewRoom()">Создать новую игру</button>
-    <div style="margin-top:20px">
-      <input type="text" id="room-code-input"
-             placeholder="Введите код комнаты (6 цифр)" maxlength="6" />
-      <button onclick="joinRoomByCode()">Присоединиться по коду</button>
-    </div>
-  </div>
-
-  <!-- main game screen -->
-  <div id="game" style="display:none">
-    <div id="info">
-      <div id="room-code-display"></div>
-      <div id="players"></div>
-      <div id="sets-count"></div>
-    </div>
+  <div id="app">
+    <!-- ... ваш заголовок, лоадер и т.д. ... -->
 
     <div id="board-container">
       <div id="board"></div>
     </div>
 
     <div id="controls">
+      <!-- вместо кнопки приглашения: поле для копирования ссылки -->
       <input
-    type="text"
-    id="invite-link"
-    style="display:none; width:100%; padding:8px; box-sizing:border-box;"
-    readonly
-  />
+        type="text"
+        id="invite-link"
+        style="display:none; width:100%; padding:8px; box-sizing:border-box;"
+        readonly
+      />
       <button onclick="addMoreCards()">+3 карты</button>
       <button onclick="newGame()">Новая игра</button>
       <button onclick="endGame()">Завершить игру</button>
     </div>
   </div>
+
+  <script src="set-game.js"></script>
 </body>
 </html>
