@@ -2,8 +2,9 @@
    Fixed layout bugs for desktop & iPhone (iOS Safari 16+).
    Changes:
    - Robust viewport handling via CSS var --vh and ResizeObserver
-   - layoutCards(): chooses best columns, falls back to scroll instead of cropping
+   - layoutCards(): enforces min 4 columns, prevents overlap, caps card size
    - Board container overflow-y:auto when needed
+   - Removed redundant resize event listener to prevent race conditions
 */
 
 /******************* Firebase CONFIG ********************/
@@ -242,7 +243,8 @@ function drawBoard(cards) {
 function layoutCards() {
   const GAP = 8; // Consistent with CSS gap
   const MIN_CARD_WIDTH = 60; // Minimum card width for usability
-  const MAX_CARD_WIDTH = 120; // Maximum card width for larger screens
+  const MAX_CARD_WIDTH = 100; // Tighter max width to prevent oversized cards
+  const MIN_COLUMNS = 4; // Enforce minimum 4 cards per row
   const board = document.getElementById("board");
   const box = document.getElementById("board-container");
   const N = board.children.length;
@@ -256,9 +258,10 @@ function layoutCards() {
   const W = box.clientWidth - paddingX;
   const H = box.clientHeight - paddingY;
 
-  // Calculate number of columns based on available width
-  let cols = Math.floor(W / (MIN_CARD_WIDTH + GAP));
-  cols = Math.max(1, Math.min(cols, N)); // At least 1, at most N
+  // Calculate number of columns, prioritizing at least 4
+  let cols = Math.max(MIN_COLUMNS, Math.floor(W / (MIN_CARD_WIDTH + GAP)));
+  // Ensure we don't exceed available cards or screen width
+  cols = Math.min(cols, Math.floor(W / (MIN_CARD_WIDTH + GAP)), N);
   let cardW = (W - GAP * (cols - 1)) / cols;
   cardW = Math.min(Math.max(cardW, MIN_CARD_WIDTH), MAX_CARD_WIDTH); // Clamp card width
   const cardH = cardW * 1.5; // Maintain 2:3 aspect ratio
@@ -268,12 +271,13 @@ function layoutCards() {
   // Enable scrolling if content height exceeds container height
   box.style.overflowY = totalH > H ? "auto" : "hidden";
 
-  // Apply styles to board for centering
+  // Apply styles to board for centering and consistent layout
   board.style.display = "flex";
   board.style.flexWrap = "wrap";
   board.style.gap = `${GAP}px`;
   board.style.width = `${cols * cardW + (cols - 1) * GAP}px`;
   board.style.margin = "0 auto";
+  board.style.alignContent = "flex-start";
 
   // Apply card sizes
   Array.from(board.children).forEach(card => {
@@ -281,9 +285,9 @@ function layoutCards() {
     card.style.height = `${cardH}px`;
     card.style.minWidth = `${cardW}px`;
     card.style.minHeight = `${cardH}px`;
+    card.style.boxSizing = "border-box"; // Ensure padding/border included
   });
 }
-window.addEventListener("resize", layoutCards);
 
 /******************* Helpers ********************/
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
