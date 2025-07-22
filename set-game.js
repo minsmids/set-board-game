@@ -7,7 +7,7 @@
 
 /******************* Firebase CONFIG ********************/
 const firebaseConfig = {
-  apiKey: "AIzaSy…",                     // ←--­ свои ключи
+  apiKey: "AIzaSyD5X8yyI8CzxDdlenFLS13QOFKU3CevQrs",                     // ←--­ свои ключи
   authDomain: "set-telegram.firebaseapp.com",
   databaseURL: "https://set-telegram-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "set-telegram",
