@@ -54,14 +54,14 @@ async function loginUser(roomIdFromLink = null) {
   const snap = await db.ref(`playerSessions/${nickname}`).once("value");
   const prevRoom = snap.val();
   if (prevRoom && (await db.ref(`rooms/${prevRoom}`).once("value")).exists()) {
-    joinRoom(prevRoom); return;
+    // Removed automatic joinRoom(prevRoom); return;
   }
   if (prevRoom) db.ref(`playerSessions/${nickname}`).remove();   // зачистить «битую» сессию
 
   // 2) если пришли по приглашению
   if (roomIdFromLink) {
     if ((await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists()) {
-      joinRoom(roomIdFromLink); return;
+      // Removed automatic joinRoom(roomIdFromLink); return;
     }
     alert("Комната уже не существует"); return;
   }
