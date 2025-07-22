@@ -7,7 +7,7 @@
 
 /******************* Firebase CONFIG ********************/
 const firebaseConfig = {
-  apiKey: "AIzaSyD5X8yyI8CzxDdlenFLS13QOFKU3CevQrs",                     // ←--­ свои ключи
+  apiKey: "AIzaSy…",                     // ←--­ свои ключи
   authDomain: "set-telegram.firebaseapp.com",
   databaseURL: "https://set-telegram-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "set-telegram",
@@ -34,7 +34,6 @@ document.addEventListener("DOMContentLoaded", () => {
     tg.ready(); tg.expand();
 
     const u = tg.initDataUnsafe.user;
-    console.log("Telegram user data:", u); // Add this line for debugging
     nickname = u.username || `${u.first_name || "user"}_${u.id}`;
 
     loginUser(tg.initDataUnsafe.start_param);   // если пришли по приглашению
@@ -194,29 +193,45 @@ function endGame() {
 }
 
 /******************* Rendering ********************/
-function drawBoard(cards) {
+/* Updated drawBoard function to handle Firebase lists as objects */
+function drawBoard(cardsData) {
   const board = document.getElementById("board");
   board.innerHTML = "";
 
-  // инфо-бар (код комнаты + счётчик сетов)
-  document.getElementById("room-code-display").innerText = `Код комнаты: ${currentRoomId}`;  // 
+  // Convert Firebase data (object) to array if needed
+  const cards = Array.isArray(cardsData)
+    ? cardsData
+    : cardsData && typeof cardsData === 'object'
+      ? Object.values(cardsData)
+      : [];
+
+  console.log("Rendering board with", cards.length, "cards");
+
+  // Update info bar
+  document.getElementById("room-code-display").innerText = `Код комнаты: ${currentRoomId}`;
   document.getElementById("sets-count").innerText        = `Возможных SET-ов: ${countSets(cards)}`;
 
-  cards.forEach((card,idx) => {
+  // Render each card
+  cards.forEach((card, idx) => {
     const div = document.createElement("div");
     div.className = "card";
     if (selected.includes(idx)) div.classList.add("selected");
     div.onclick = () => selectCard(idx);
 
-    const [color,shape,fill,count] = card, colTxt = COLORS[color];
-    for (let n=0;n<count;n++) {
+    const [color, shape, fill, count] = card;
+    const colTxt = COLORS[color];
+
+    for (let n = 0; n < count; n++) {
       const el = document.createElement("div");
       el.className = "symbol";
       el.innerHTML = getSVG(shape, fill, colTxt);
       div.appendChild(el);
     }
+
     board.appendChild(div);
+    console.log(`Card ${idx} appended to board.`);
   });
+}
 
 /******************* Helpers ********************/
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
