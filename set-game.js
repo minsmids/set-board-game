@@ -88,9 +88,13 @@ async function createNewRoom() {
 async function joinRoomByCode() {
   const code = document.getElementById("room-code-input")?.value.trim();
   if (!/^\d{6}$/.test(code)) return alert("Введите корректный 6-значный код");
-  if (!(await db.ref(`rooms/${code}`).once("value")).exists())
-    return alert("Комната не найдена");
-  joinRoom(code);
+  const roomExists = (await db.ref(`rooms/${code}`).once("value")).exists();
+  if (!roomExists) {
+    currentRoomId = code;
+    joinRoom(code, true); // Create new room if it doesn't exist
+  } else {
+    joinRoom(code);
+  }
 }
 
 /******************* Core room handshake ********************/
