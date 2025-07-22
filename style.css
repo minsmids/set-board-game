@@ -94,7 +94,9 @@ body {
 
 /* ===== Card ===== */
 .card {
-  aspect-ratio: 2 / 3;           /* пропорции; размер даёт JS */
+  aspect-ratio: 2 / 3;
+  max-width: 150px; /* Adjust as needed */
+  width: calc(33.33% - 20px); /* For 3 cards per row with 10px gap */
   background: var(--secondary-bg);
   border: 2px solid var(--hint);
   border-radius: 8px;
