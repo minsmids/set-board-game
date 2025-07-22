@@ -1,0 +1,118 @@
+'''/* Basic styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f0f0f0;
+  color: #333;
+  margin: 0;
+  padding: 10px;
+  box-sizing: border-box;
+  overscroll-behavior-y: none; /* Prevents pull-to-refresh in web-view */
+}
+
+/* Layout containers */
+#login, #lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+}
+
+#game {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 20px); /* Full height minus padding */
+}
+
+/* Info bar at the top */
+#info {
+  padding: 5px;
+  margin-bottom: 10px;
+  text-align: center;
+  font-size: 0.9em;
+  color: #555;
+}
+
+#sets-count {
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+/* Board container - this will scroll */
+#board-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-bottom: 10px;
+}
+
+/* The board itself - a responsive grid */
+#board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
+  justify-content: center;
+}
+
+/* Individual card styling */
+.card {
+  background-color: #fff;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  padding: 5px;
+  cursor: pointer;
+  aspect-ratio: 3 / 2; /* Maintain a consistent shape */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.card:hover {
+  border-color: #999;
+}
+
+.card.selected {
+  border-color: #007bff;
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+/* Symbol (SVG) styling */
+.symbol {
+  width: 80%;
+  height: auto;
+}
+
+/* Controls at the bottom */
+#controls {
+  padding-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-shrink: 0; /* Prevent controls from shrinking */
+}
+
+/* General button styling */
+button {
+  padding: 10px 15px;
+  font-size: 1em;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+input[type="text"] {
+    padding: 10px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+'''
