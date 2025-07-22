@@ -156,27 +156,3 @@ input[type="text"]{
   border-radius: 6px;
   width: 220px;
 }
-
-/* ===== Invite link ===== */
-#invite-link {
-  padding: 10px 15px;
-  font-size: 1rem;
-  border-radius: 6px;
-  background: var(--button);
-  color: var(--button-text);
-  text-decoration: none;
-  cursor: pointer;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 220px; /* Match input width for consistency */
-}
-
-#invite-link:hover {
-  filter: brightness(0.9);
-}
-
-#invite-link:active {
-  transform: scale(0.98);
-}
