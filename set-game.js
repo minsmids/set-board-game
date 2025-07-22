@@ -26,23 +26,30 @@ let currentRoomId = null;
 let selected = [];
 const COLORS = ["red", "green", "purple"];
 
-/******************* Telegram integration & bootstrap ********************/
+'''/******************* Telegram integration & bootstrap ********************/
 document.addEventListener("DOMContentLoaded", () => {
   const tg = window.Telegram?.WebApp;
+  console.log("DOMContentLoaded fired.");
+  console.log("Telegram WebApp object:", tg);
 
   // Check if the app is running in Telegram and user data is available
   if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    console.log("Running in Telegram WebApp.");
     tg.ready();
     tg.expand();
 
     const u = tg.initDataUnsafe.user;
+    console.log("Telegram user data:", u);
     // Use username if available, otherwise construct a name
     nickname = u.username || `${u.first_name || "user"}_${u.last_name || u.id}`;
+    console.log("Assigned nickname:", nickname);
     
     const roomIdFromLink = tg.initDataUnsafe.start_param;
+    console.log("Room ID from link:", roomIdFromLink);
     
     loginUser(roomIdFromLink);
   } else {
+    console.log("Not running in Telegram WebApp or user data not available. Showing login form.");
     // Fallback for regular browser environment
     document.getElementById("login").style.display = "block";
   }
@@ -50,17 +57,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Called from login form if not in Telegram
 function manualLogin() {
+    console.log("manualLogin called.");
+    const nicknameInput = document.getElementById("nickname");
+    if (nicknameInput) {
+        nickname = nicknameInput.value.trim();
+        console.log("Manual nickname input:", nickname);
+    }
+    
     if (!nickname) {
-        nickname = document.getElementById("nickname").value.trim();
-        if (!nickname) return alert("Введите имя");
+        alert("Введите имя");
+        return;
     }
     loginUser();
 }
 
 async function loginUser(roomIdFromLink = null) {
+    console.log(`loginUser called with nickname: ${nickname}, roomIdFromLink: ${roomIdFromLink}`);
     // 1. Check for an existing session
     const sessionSnap = await db.ref(`playerSessions/${nickname}`).once("value");
     const existingRoomId = sessionSnap.val();
+    console.log("Existing room ID from session:", existingRoomId);
 
     if (existingRoomId) {
         const roomSnap = await db.ref(`rooms/${existingRoomId}`).once("value");
@@ -69,6 +85,7 @@ async function loginUser(roomIdFromLink = null) {
             joinRoom(existingRoomId);
             return;
         } else {
+            console.log("Stale session found, cleaning up.");
             // Clean up stale session
             db.ref(`playerSessions/${nickname}`).remove();
         }
@@ -88,13 +105,22 @@ async function loginUser(roomIdFromLink = null) {
     }
 
     // 3. Otherwise, show the lobby to create/join a room
+    console.log("No existing session or invited room. Showing lobby.");
     showLobby();
 }
 
 function showLobby() {
-    document.getElementById("login").style.display = "none";
-    document.getElementById("lobby").style.display = "block";
+    console.log("showLobby called.");
+    const loginDiv = document.getElementById("login");
+    const lobbyDiv = document.getElementById("lobby");
+    const gameDiv = document.getElementById("game");
+
+    if (loginDiv) loginDiv.style.display = "none";
+    if (lobbyDiv) lobbyDiv.style.display = "block";
+    if (gameDiv) gameDiv.style.display = "none";
+    console.log("UI display states: login=", loginDiv?.style.display, ", lobby=", lobbyDiv?.style.display, ", game=", gameDiv?.style.display);
 }
+'''
 
 /******************* Core game logic ********************/
 async function createNewRoom() {
