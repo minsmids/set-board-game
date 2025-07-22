@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     loginUser(tg.initDataUnsafe.start_param);   // если пришли по приглашению
   } else {
-    document.getElementById("login").style.display = "block"; // обычный браузер
+    showLobby(); // обычный браузер - сразу показываем лобби
   }
 });
 
