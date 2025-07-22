@@ -83,7 +83,6 @@ body {
   display: flex;
   justify-content: center;
   overflow: hidden;
-  width: 600px; /* Explicitly set width to allow 4 cards per row */
 }
 
 #board {
@@ -96,7 +95,7 @@ body {
 /* ===== Card ===== */
 .card {
   aspect-ratio: 2 / 3;
-  width: 120px; /* Fixed width for cards */
+  width: calc(25% - 15px); /* For 4 cards per row with 10px gap */
   background: var(--secondary-bg);
   border: 2px solid var(--hint);
   border-radius: 8px;
