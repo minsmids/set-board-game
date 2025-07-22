@@ -79,10 +79,11 @@ body {
 /* ===== Central board area ===== */
 #board-container {
   flex: 1 1 0%;
-  min-height: 0;      /* даём flex-у реально ужаться */
+  min-height: 0;
   display: flex;
   justify-content: center;
-  overflow: hidden;   /* скролл больше не нужен */
+  overflow: hidden;
+  width: 600px; /* Explicitly set width to allow 4 cards per row */
 }
 
 #board {
@@ -90,14 +91,12 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
-  max-width: 650px; /* Max width to allow 4 cards per row (approx. 4*150px + 3*10px) */
 }
 
 /* ===== Card ===== */
 .card {
   aspect-ratio: 2 / 3;
-  max-width: 150px; /* Adjust as needed */
-  width: calc(25% - 20px); /* For 4 cards per row with 10px gap */
+  width: 120px; /* Fixed width for cards */
   background: var(--secondary-bg);
   border: 2px solid var(--hint);
   border-radius: 8px;
