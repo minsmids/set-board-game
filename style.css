@@ -15,13 +15,13 @@
 
 /* dynamic viewport: use new units when available, fall back to JS var */
 html, body {
-  height: calc(var(--vh, 1vh) * 100);
+  height: calc(var(--vh, 1vh) * 100) !important;
 }
 @supports (height: 100dvh) {
-  html, body { height: 100dvh; }
+  html, body { height: 100dvh !important; }
 }
 @supports (height: 100svh) {
-  html, body { height: 100svh; }
+  html, body { height: 100svh !important; }
 }
 
 body {
@@ -39,105 +39,19 @@ body {
 /* ================= Layouts ================= */
 #login,
 #lobby {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
   gap: 12px;
 }
 
 /* flex-колонка: шапка — центр — подвал */
 #game {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0; /* Safari flex fix */
-}
-
-/* ===== Top / bottom bars ===== */
-#info,
-#controls {
-  flex: 0 0 auto;            /* не сжимать */
-  box-sizing: border-box;
-}
-
-#info {
-  padding: calc(6px + env(safe-area-inset-top,0)) 10px 6px;
-  text-align: center;
-  font-size: 0.9rem;
-  background: var(--secondary-bg);
-  color: var(--hint);
-  border-bottom: 1px solid var(--hint);
-}
-
-#room-code-display { font-weight: 600; margin-bottom: 2px; }
-#sets-count       { margin-top: 4px; font-weight: 600; color: var(--text); }
-
-#controls {
-  padding: 10px 10px calc(10px + env(safe-area-inset-bottom,0));
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  background: var(--bg);
-  border-top: 1px solid var(--hint);
-}
-
-/* ===== Telegram-friendly baseline ===== */
-:root {
-  /* Dynamic colors from Telegram themes with fallbacks */
-  --bg:            var(--tg-theme-bg-color, #f0f0f0);
-  --text:          var(--tg-theme-text-color, #333);
-  --hint:          var(--tg-theme-hint-color, #888);
-  --link:          var(--tg-theme-link-color, #007bff);
-  --button:        var(--tg-theme-button-color, #007bff);
-  --button-text:   var(--tg-theme-button-text-color, #fff);
-  --secondary-bg:  var(--tg-theme-secondary-bg-color, #fff);
-
-  /* JS sets this for iOS Safari fallback */
-  --vh: 1vh;
-}
-
-/* dynamic viewport: use new units when available, fall back to JS var */
-html, body {
-  height: calc(var(--vh, 1vh) * 100);
-}
-@supports (height: 100dvh) {
-  html, body { height: 100dvh; }
-}
-@supports (height: 100svh) {
-  html, body { height: 100svh; }
-}
-
-body {
-  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  margin: 0;
-  padding: env(safe-area-inset-top,0) env(safe-area-inset-right,0)
-           env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
-  box-sizing: border-box;
-  overscroll-behavior-y: none;          /* отключаем pull-to-refresh */
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ================= Layouts ================= */
-#login,
-#lobby {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 12px;
-}
-
-/* flex-колонка: шапка — центр — подвал */
-#game {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
   min-height: 0; /* Safari flex fix */
 }
 
@@ -172,25 +86,26 @@ body {
 
 /* ===== Central board area ===== */
 #board-container {
-  flex: 1 1 0%;
+  flex: 1 1 0% !important;
   min-height: 0;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start; /* выравнивание по верху */
-  overflow-y: auto;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-start !important; /* выравнивание по верху */
+  overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
   padding: 10px; /* добавляем отступы */
-  box-sizing: border-box;
+  box-sizing: border-box !important;
+  max-width: 100% !important; /* Prevent Telegram from overriding width */
 }
 
 #board {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-content: flex-start; /* контент прижат к верху */
-  gap: 8px; /* Consistent with JS GAP */
-  width: 100%;
-  box-sizing: border-box;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  align-content: flex-start !important;
+  gap: 8px !important; /* Consistent with JS GAP */
+  width: auto !important; /* Allow JS to set exact width */
+  box-sizing: border-box !important;
   min-height: min-content; /* важно для правильного расчета */
 }
 
@@ -200,15 +115,15 @@ body {
   border: 2px solid var(--hint);
   border-radius: 8px;
   padding: 8px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  align-items: center;
-  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-around !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
   cursor: pointer;
   transition: transform 0.08s ease, border-color 0.08s ease;
   will-change: transform;
-  flex-shrink: 0; /* Prevent cards from shrinking */
+  flex-shrink: 0 !important; /* Prevent cards from shrinking */
 }
 
 .card:hover {
@@ -234,7 +149,7 @@ body {
   }
   
   #board {
-    gap: 8px;
+    gap: 8px !important;
   }
   
   .card {
@@ -248,30 +163,10 @@ body {
   }
   
   #board {
-    gap: 8px;
+    gap: 8px !important;
   }
 }
 
-/* ===== Buttons & inputs ===== */
-button {
-  padding: 10px 15px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 6px;
-  background: var(--button);
- carnation: var(--button-text);
-  cursor: pointer;
-}
-button:hover  { filter: brightness(0.9); }
-button:active { transform: scale(0.98); }
-
-input[type="text"]{
-  padding: 10px;
-  font-size: 1rem;
-  border: 1px solid var(--hint);
-  border-radius: 6px;
-  width: 220px;
-}
 /* ===== Buttons & inputs ===== */
 button {
   padding: 10px 15px;

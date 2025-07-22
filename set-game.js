@@ -1,188 +1,335 @@
-/* ===== Telegram-friendly baseline ===== */
-:root {
-  /* Dynamic colors from Telegram themes with fallbacks */
-  --bg:            var(--tg-theme-bg-color, #f0f0f0);
-  --text:          var(--tg-theme-text-color, #333);
-  --hint:          var(--tg-theme-hint-color, #888);
-  --link:          var(--tg-theme-link-color, #007bff);
-  --button:        var(--tg-theme-button-color, #007bff);
-  --button-text:   var(--tg-theme-button-text-color, #fff);
-  --secondary-bg:  var(--tg-theme-secondary-bg-color, #fff);
+/* ===== SET Multiplayer (room-based) for Telegram Web App =====
+   Fixed layout bugs for desktop & iPhone (iOS Safari 16+).
+   Changes:
+   - Robust viewport handling via CSS var --vh and ResizeObserver
+   - layoutCards(): enforces min 4 columns, uses getBoundingClientRect for width
+   - Enhanced initial layout with retries
+   - Added detailed debug logs
+*/
 
-  /* JS sets this for iOS Safari fallback */
-  --vh: 1vh;
-}
+/******************* Firebase CONFIG ********************/
+const firebaseConfig = {
+  apiKey: "AIzaSy…",                     // ←-- свои ключи
+  authDomain: "set-telegram.firebaseapp.com",
+  databaseURL: "https://set-telegram-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "set-telegram",
+  storageBucket: "set-telegram.appspot.com",
+  messagingSenderId: "772429781868",
+  appId: "1:772429781868:web:bbdf0385402df96e36b149",
+  measurementId: "G-SSKXER5X99"
+};
 
-/* dynamic viewport: use new units when available, fall back to JS var */
-html, body {
-  height: calc(var(--vh, 1vh) * 100);
-}
-@supports (height: 100dvh) {
-  html, body { height: 100dvh; }
-}
-@supports (height: 100svh) {
-  html, body { height: 100svh; }
-}
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-body {
-  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  margin: 0;
-  padding: env(safe-area-inset-top,0) env(safe-area-inset-right,0)
-           env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
-  box-sizing: border-box;
-  overscroll-behavior-y: none;          /* отключаем pull-to-refresh */
-  -webkit-font-smoothing: antialiased;
+/******************* Global state ********************/
+let nickname       = "";
+let currentRoomId  = null;
+let selected       = [];
+const COLORS       = ["red", "green", "purple"];
+let resizeObserver = null;
+let layoutTimeout = null;
+
+/******************* Viewport bugfix for iOS Safari ********************/
+function setVHVar(){
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
 }
+window.addEventListener('resize', setVHVar);
+window.addEventListener('orientationchange', setVHVar);
+setVHVar();
 
-/* ================= Layouts ================= */
-#login,
-#lobby {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 12px;
-}
+/******************* Telegram bootstrap ********************/
+document.addEventListener("DOMContentLoaded", () => {
+  const tg = window.Telegram?.WebApp;
 
-/* flex-колонка: шапка — центр — подвал */
-#game {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100%;
-  min-height: 0; /* Safari flex fix */
-}
+  if (tg && tg.initDataUnsafe?.user) {          // запущено в Telegram
+    tg.ready(); tg.expand();
 
-/* ===== Top / bottom bars ===== */
-#info,
-#controls {
-  flex: 0 0 auto;            /* не сжимать */
-  box-sizing: border-box;
-}
+    const u = tg.initDataUnsafe.user;
+    nickname = u.username || `${u.first_name || "user"}_${u.id}`;
 
-#info {
-  padding: calc(6px + env(safe-area-inset-top,0)) 10px 6px;
-  text-align: center;
-  font-size: 0.9rem;
-  background: var(--secondary-bg);
-  color: var(--hint);
-  border-bottom: 1px solid var(--hint);
-}
-
-#room-code-display { font-weight: 600; margin-bottom: 2px; }
-#sets-count       { margin-top: 4px; font-weight: 600; color: var(--text); }
-
-#controls {
-  padding: 10px 10px calc(10px + env(safe-area-inset-bottom,0));
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  background: var(--bg);
-  border-top: 1px solid var(--hint);
-}
-
-/* ===== Central board area ===== */
-#board-container {
-  flex: 1 1 0% !important;
-  min-height: 0;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: flex-start !important; /* выравнивание по верху */
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
-  padding: 10px; /* добавляем отступы */
-  box-sizing: border-box !important;
-}
-
-#board {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  justify-content: center !important;
-  align-content: flex-start !important;
-  gap: 8px !important; /* Consistent with JS GAP */
-  width: 100%;
-  box-sizing: border-box !important;
-  min-height: min-content; /* важно для правильного расчета */
-}
-
-/* ===== Card ===== */
-.card {
-  background: var(--secondary-bg);
-  border: 2px solid var(--hint);
-  border-radius: 8px;
-  padding: 8px;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-around !important;
-  align-items: center !important;
-  box-sizing: border-box !important;
-  cursor: pointer;
-  transition: transform 0.08s ease, border-color 0.08s ease;
-  will-change: transform;
-  flex-shrink: 0 !important; /* Prevent cards from shrinking */
-}
-
-.card:hover {
-  border-color: var(--link);
-}
-
-.card.selected {
-  border-color: var(--link);
-  transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(0,123,255,.45);
-}
-
-.symbol {
-  width: 90%;
-  height: auto;
-  flex-shrink: 0;
-}
-
-/* Медиа-запросы для разных размеров экрана */
-@media (max-width: 480px) {
-  #board-container {
-    padding: 5px;
+    loginUser(tg.initDataUnsafe.start_param);   // если пришли по приглашению
+  } else {
+    document.getElementById("login").style.display = "block"; // обычный браузер
   }
-  
-  #board {
-    gap: 8px !important;
-  }
-  
-  .card {
-    padding: 6px;
-  }
+});
+
+/******************* Auth flows ********************/
+function manualLogin() {
+  nickname = document.getElementById("nickname")?.value.trim();
+  if (!nickname) { alert("Введите имя"); return; }
+  loginUser();
 }
 
-@media (min-width: 768px) {
-  #board-container {
-    padding: 15px;
+async function loginUser(roomIdFromLink = null) {
+  // 1) попытка восстановить предыдущую сессию
+  const snap = await db.ref(`playerSessions/${nickname}`).once("value");
+  const prevRoom = snap.val();
+  if (prevRoom && (await db.ref(`rooms/${prevRoom}`).once("value")).exists()) {
+    joinRoom(prevRoom); return;
   }
-  
-  #board {
-    gap: 8px !important;
+  if (prevRoom) db.ref(`playerSessions/${nickname}`).remove();   // зачистить «битую» сессию
+
+  // 2) если пришли по приглашению
+  if (roomIdFromLink) {
+    if ((await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists()) {
+      joinRoom(roomIdFromLink); return;
+    }
+    alert("Комната уже не существует"); showLobby(); return;
   }
+
+  // 3) новый пользователь – показываем лобби
+  showLobby();
 }
 
-/* ===== Buttons & inputs ===== */
-button {
-  padding: 10px 15px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 6px;
-  background: var(--button);
-  color: var(--button-text);
-  cursor: pointer;
+function showLobby() {
+  ["login","game"].forEach(id => document.getElementById(id).style.display = "none");
+  document.getElementById("lobby").style.display = "block";
 }
-button:hover  { filter: brightness(0.9); }
-button:active { transform: scale(0.98); }
 
-input[type="text"]{
-  padding: 10px;
-  font-size: 1rem;
-  border: 1px solid var(--hint);
-  border-radius: 6px;
-  width: 220px;
+/******************* Lobby actions ********************/
+async function createNewRoom() {
+  let code, attempts = 0;
+  do { code = Math.floor(100000 + Math.random()*900000).toString(); }           // 6-digits
+  while ((await db.ref(`rooms/${code}`).once("value")).exists() && ++attempts<10);
+  if (attempts===10) return alert("Не удалось создать комнату, попробуйте ещё");
+  currentRoomId = code;
+  joinRoom(code, true);
+}
+
+async function joinRoomByCode() {
+  const code = document.getElementById("room-code-input")?.value.trim();
+  if (!/^\d{6}$/.test(code)) return alert("Введите корректный 6-значный код");
+  if (!(await db.ref(`rooms/${code}`).once("value")).exists())
+    return alert("Комната не найдена");
+  joinRoom(code);
+}
+
+/******************* Core room handshake ********************/
+function joinRoom(roomId, isHost = false) {
+  currentRoomId = roomId;
+
+  document.getElementById("login").style.display  = "none";
+  document.getElementById("lobby").style.display  = "none";
+  document.getElementById("game").style.display   = "block";
+
+  /* приглашение – ссылка вида
+     https://t.me/<bot>/setgame?startapp=<roomId> */
+  const btn = document.getElementById("invite-btn");
+  if (btn) {
+    const bot = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
+    const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;
+    btn.onclick = () => Telegram.WebApp.openTelegramLink(link);
+    btn.style.display = "block";
+  }
+
+  db.ref(`rooms/${roomId}/players/${nickname}`).set({score:0});
+  db.ref(`playerSessions/${nickname}`).set(roomId);
+
+  if (isHost) initializeGame();
+
+  db.ref(`rooms/${roomId}/game/cards`)
+    .on("value", snap => drawBoard(snap.val() || []));
+  db.ref(`rooms/${roomId}/players`)
+    .on("value", snap => {
+      const list = Object.entries(snap.val()||{})
+        .map(([n,{score=0}])=>`${n}: ${score}`).join("  ");
+      document.getElementById("players").innerHTML = list;
+    });
+
+  // Attach ResizeObserver once
+  if (!resizeObserver) {
+    const box = document.getElementById("board-container");
+    if (box && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        if (layoutTimeout) clearTimeout(layoutTimeout);
+        layoutTimeout = setTimeout(() => requestAnimationFrame(layoutCards), 200);
+      });
+      resizeObserver.observe(box);
+    }
+  }
+
+  // Force initial layout with retries
+  let attempt = 0;
+  const ensureLayout = () => {
+    requestAnimationFrame(layoutCards);
+    if (attempt++ < 3 && document.getElementById("board").children.length > 0) {
+      setTimeout(ensureLayout, 200);
+    }
+  };
+  setTimeout(ensureLayout, 100);
+}
+
+/******************* Game lifecycle ********************/
+function initializeGame() {
+  db.ref(`rooms/${currentRoomId}/players`).remove();      // reset scores
+
+  const deck = [];
+  for (let c=0;c<3;c++) for (let s=0;s<3;s++)
+    for (let f=0;f<3;f++) for (let n=1;n<=3;n++) deck.push([c,s,f,n]);
+  shuffle(deck);
+
+  db.ref(`rooms/${currentRoomId}/game`).set({
+    cards          : deck.splice(0,12),
+    availableCards : deck
+  });
+  selected = [];
+}
+
+function newGame()        { if (confirm("Новая партия?")) initializeGame(); }
+function addMoreCards()   {
+  db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
+    const {cards=[],availableCards:avail=[]} = snap.val()||{};
+    if (avail.length<3) return alert("Нет больше карт!");
+    db.ref(`rooms/${currentRoomId}/game`).update({
+      cards: [...cards, ...avail.splice(0,3)],
+      availableCards: avail
+    });
+  });
+}
+
+/******************* Interaction ********************/
+function selectCard(idx) {
+  selected = selected.includes(idx) ? selected.filter(i=>i!==idx) : [...selected, idx];
+  if (selected.length === 3) checkSet();
+  else db.ref(`rooms/${currentRoomId}/game/cards`).once("value", s => drawBoard(s.val()));
+}
+
+function checkSet() {
+  db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
+    const {cards=[],availableCards:avail=[]} = snap.val()||{};
+    const [a,b,c] = selected.map(i => cards[i]);
+    const isSet   = [0,1,2,3].every(i => {
+      const s = new Set([a[i],b[i],c[i]]); return s.size===1 || s.size===3;
+    });
+
+    if (isSet) {
+      let newCards = [...cards];
+      selected.sort((x,y)=>y-x).forEach(i=>newCards.splice(i,1));
+      if (newCards.length<12 && avail.length>=3)
+        newCards = [...newCards, ...avail.splice(0,3)],
+        db.ref(`rooms/${currentRoomId}/game/availableCards`).set(avail);
+
+      db.ref(`rooms/${currentRoomId}/game/cards`).set(newCards);
+      db.ref(`rooms/${currentRoomId}/players/${nickname}/score`)
+        .transaction(s => (s||0)+1);
+      Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light");
+    } else alert("Это не SET");
+
+    selected = [];
+    db.ref(`rooms/${currentRoomId}/game/cards`).once("value", s => drawBoard(s.val()));
+  });
+}
+
+function endGame() {
+  if (confirm("Завершить игру и удалить комнату?"))
+    db.ref(`rooms/${currentRoomId}`).remove().then(showLobby);
+}
+
+/******************* Rendering ********************/
+function drawBoard(cards) {
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+
+  // инфо-бар (код комнаты + счётчик сетов)
+  document.getElementById("room-code-display").innerText = `Код комнаты: ${currentRoomId}`;
+  document.getElementById("sets-count").innerText        = `Возможных SET-ов: ${countSets(cards)}`;
+
+  cards.forEach((card,idx) => {
+    const div = document.createElement("div");
+    div.className = "card";
+    if (selected.includes(idx)) div.classList.add("selected");
+    div.onclick = () => selectCard(idx);
+
+    const [color,shape,fill,count] = card, colTxt = COLORS[color];
+    for (let n=0;n<count;n++) {
+      const el = document.createElement("div");
+      el.className = "symbol";
+      el.innerHTML = getSVG(shape, fill, colTxt);
+      div.appendChild(el);
+    }
+    board.appendChild(div);
+  });
+
+  // Ensure layout is applied after DOM updates
+  if (layoutTimeout) clearTimeout(layoutTimeout);
+  layoutTimeout = setTimeout(() => requestAnimationFrame(layoutCards), 100);
+}
+
+function layoutCards() {
+  const GAP = 8; // Consistent with CSS gap
+  const MIN_CARD_WIDTH = 60; // Minimum card width for usability
+  const MAX_CARD_WIDTH = 100; // Max width to prevent oversized cards
+  const MIN_COLUMNS = 4; // Enforce minimum 4 cards per row
+  const board = document.getElementById("board");
+  const box = document.getElementById("board-container");
+  const N = board.children.length;
+
+  if (!N || !box) return;
+
+  // Force reflow and use getBoundingClientRect for accurate width
+  box.offsetWidth;
+  const rect = box.getBoundingClientRect();
+  const paddingX = parseFloat(getComputedStyle(box).paddingLeft) + parseFloat(getComputedStyle(box).paddingRight);
+  const paddingY = parseFloat(getComputedStyle(box).paddingTop) + parseFloat(getComputedStyle(box).paddingBottom);
+  const W = rect.width - paddingX;
+  const H = rect.height - paddingY;
+
+  // Debug log to diagnose column issues
+  console.log(`layoutCards: rect.width=${rect.width}, W=${W}, H=${H}, N=${N}`);
+
+  // Calculate number of columns, prioritizing at least 4
+  const minWidthRequired = MIN_COLUMNS * MIN_CARD_WIDTH + (MIN_COLUMNS - 1) * GAP;
+  let cols = W >= minWidthRequired ? Math.max(MIN_COLUMNS, Math.floor(W / (MIN_CARD_WIDTH + GAP))) : Math.max(2, Math.floor(W / (MIN_CARD_WIDTH + GAP)));
+  let cardW = (W - GAP * (cols - 1)) / cols;
+  cardW = Math.min(Math.max(cardW, MIN_CARD_WIDTH), MAX_CARD_WIDTH); // Clamp card width
+  const cardH = cardW * 1.5; // Maintain 2:3 aspect ratio
+  const rows = Math.ceil(N / cols);
+  const totalH = rows * cardH + GAP * (rows - 1);
+
+  // Debug log for calculated values
+  console.log(`layoutCards: cols=${cols}, cardW=${cardW}, cardH=${cardH}, rows=${rows}, totalH=${totalH}`);
+
+  // Enable scrolling if content height exceeds container height
+  box.style.overflowY = totalH > H ? "auto" : "hidden";
+
+  // Apply styles to board for centering and consistent layout
+  board.style.display = "flex !important";
+  board.style.flexWrap = "wrap !important";
+  board.style.gap = `${GAP}px !important`;
+  board.style.width = `${cols * cardW + (cols - 1) * GAP}px !important`;
+  board.style.margin = "0 auto";
+  board.style.alignContent = "flex-start !important";
+
+  // Apply card sizes
+  Array.from(board.children).forEach(card => {
+    card.style.width = `${cardW}px !important`;
+    card.style.height = `${cardH}px !important`;
+    card.style.minWidth = `${cardW}px !important`;
+    card.style.minHeight = `${cardH}px !important`;
+    card.style.boxSizing = "border-box !important";
+  });
+}
+
+/******************* Helpers ********************/
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
+function countSets(c){
+  let n=c.length,res=0;if(n<3)return 0;
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)for(let k=j+1;k<n;k++){
+    if([0,1,2,3].every(p=>{const s=new Set([c[i][p],c[j][p],c[k][p]]);return s.size===1||s.size===3}))res++;
+  }return res;
+}
+
+/* SVG-генератор: shape 0=овал, 1=ромб, 2=волна; fill 0=пустой, 1=штрих, 2=заливка */
+function getSVG(shape, fill, color) {
+  const pid = `pat-${color}-${Math.random().toString(36).slice(2)}`,
+        fillAttr = {0:"none",1:`url(#${pid})`,2:color}[fill],
+        stroke = color, pat = `<pattern id="${pid}" width="4" height="4" patternUnits="userSpaceOnUse">
+    <path d="M0 0 l4 4" stroke="${color}" stroke-width="1"/></pattern>`;
+  const wrap = (body) => `<svg viewBox="0 0 100 50"><defs>${fill===1?pat:""}</defs>${body}</svg>`;
+  if (shape===0) return wrap(`<ellipse cx="50" cy="25" rx="40" ry="15" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+  if (shape===1) return wrap(`<polygon points="50,5 95,25 50,45 5,25" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+  if (shape===2) return wrap(`<path d="M10 35 Q25 15 40 35 Q55 15 70 35 Q85 15 90 35 L90 45 Q85 45 70 45 Q55 45 40 45 Q25 45 10 45 Z"
+                      fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+  return "";
 }
