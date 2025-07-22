@@ -122,9 +122,7 @@ body {
   transition: transform 0.08s ease, border-color 0.08s ease;
   will-change: transform;
   
-  /* Фиксированные пропорции */
-  aspect-ratio: 2/3;
-  flex-shrink: 0; /* не сжимать карты */
+  
 }
 
 .card:hover {
