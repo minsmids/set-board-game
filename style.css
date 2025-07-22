@@ -1,23 +1,21 @@
-/* ===== Telegram-friendly baseline with fixed 4-column layout ===== */
+/* ===== Telegram-friendly baseline ===== */
 :root {
-  --bg: var(--tg-theme-bg-color, #f0f0f0);
-  --text: var(--tg-theme-text-color, #333);
-  --hint: var(--tg-theme-hint-color, #888);
-  --link: var(--tg-theme-link-color, #007bff);
-  --button: var(--tg-theme-button-color, #007bff);
-  --button-text: var(--tg-theme-button-text-color, #fff);
-  --secondary-bg: var(--tg-theme-secondary-bg-color, #fff);
-  --vh: 1vh;
+  /* Dynamic colors from Telegram themes with fallbacks */
+  --bg:            var(--tg-theme-bg-color, #f0f0f0);
+  --text:          var(--tg-theme-text-color, #333);
+  --hint:          var(--tg-theme-hint-color, #888);
+  --link:          var(--tg-theme-link-color, #007bff);
+  --button:        var(--tg-theme-button-color, #007bff);
+  --button-text:   var(--tg-theme-button-text-color, #fff);
+  --secondary-bg:  var(--tg-theme-secondary-bg-color, #fff);
 }
 
-html, body {
-  height: calc(var(--vh, 1vh) * 100) !important;
-}
-@supports (height: 100dvh) {
-  html, body { height: 100dvh !important; }
-}
-@supports (height: 100svh) {
-  html, body { height: 100svh !important; }
+/* динамический viewport: 100dvh поддерживается iOS 15.4+ / Android 12+  */
+html,
+body {
+  height: 100dvh;
+  /* fallback для старых движков Safari/Chrome: */
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 
 body {
@@ -28,14 +26,13 @@ body {
   padding: env(safe-area-inset-top,0) env(safe-area-inset-right,0)
            env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
   box-sizing: border-box;
-  overscroll-behavior-y: none;
-  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;          /* отключаем pull-to-refresh */
 }
 
 /* ================= Layouts ================= */
 #login,
 #lobby {
-  /* display управляет JS */
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -43,16 +40,17 @@ body {
   gap: 12px;
 }
 
+/* flex-колонка: шапка — центр — подвал */
 #game {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100% !important;
-  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
+/* ===== Top / bottom bars ===== */
 #info,
 #controls {
-  flex: 0 0 auto;
+  flex: 0 0 auto;            /* не сжимать */
   box-sizing: border-box;
 }
 
@@ -66,7 +64,7 @@ body {
 }
 
 #room-code-display { font-weight: 600; margin-bottom: 2px; }
-#sets-count { margin-top: 4px; font-weight: 600; color: var(--text); }
+#sets-count       { margin-top: 4px; font-weight: 600; color: var(--text); }
 
 #controls {
   padding: 10px 10px calc(10px + env(safe-area-inset-bottom,0));
@@ -78,90 +76,48 @@ body {
   border-top: 1px solid var(--hint);
 }
 
+/* ===== Central board area ===== */
 #board-container {
-  flex: 1 1 0% !important;
-  min-height: 0;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: flex-start !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
-  padding: 10px;
-  box-sizing: border-box !important;
-  max-width: 100% !important;
+  flex: 1 1 0%;
+  min-height: 0;      /* даём flex-у реально ужаться */
+  display: flex;
+  justify-content: center;
+  overflow: hidden;   /* скролл больше не нужен */
 }
 
 #board {
-  display: block !important;
-  width: auto !important;
-  box-sizing: border-box !important;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
 }
 
-.card-row {
-  display: flex !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  margin-bottom: 8px !important;
-  flex-wrap: nowrap !important; /* Prevent cards from wrapping within a row */
-}
-
+/* ===== Card ===== */
 .card {
+  aspect-ratio: 2 / 3;           /* пропорции; размер даёт JS */
   background: var(--secondary-bg);
   border: 2px solid var(--hint);
   border-radius: 8px;
-  padding: 8px;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-around !important;
-  align-items: center !important;
-  box-sizing: border-box !important;
+  padding: 4% 2%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  box-sizing: border-box;
   cursor: pointer;
   transition: transform 0.08s ease, border-color 0.08s ease;
-  will-change: transform;
-  flex: 1 1 0 !important; /* Ensure equal width within row */
-  min-width: 0 !important;
 }
 
-.card:hover {
-  border-color: var(--link);
-}
-
+.card:hover    { border-color: var(--link); }
 .card.selected {
   border-color: var(--link);
   transform: scale(1.05);
   box-shadow: 0 0 10px rgba(0,123,255,.45);
 }
 
-.symbol {
-  width: 90%;
-  height: auto;
-  flex-shrink: 0;
-}
+.symbol { width: 80%; height: auto; }
 
-@media (max-width: 480px) {
-  #board-container {
-    padding: 5px;
-  }
-  
-  .card-row {
-    gap: 8px !important;
-  }
-  
-  .card {
-    padding: 6px;
-  }
-}
-
-@media (min-width: 768px) {
-  #board-container {
-    padding: 15px;
-  }
-  
-  .card-row {
-    gap: 8px !important;
-  }
-}
-
+/* ===== Buttons & inputs ===== */
 button {
   padding: 10px 15px;
   font-size: 1rem;
@@ -174,7 +130,7 @@ button {
 button:hover  { filter: brightness(0.9); }
 button:active { transform: scale(0.98); }
 
-input[type="text"] {
+input[type="text"]{
   padding: 10px;
   font-size: 1rem;
   border: 1px solid var(--hint);
