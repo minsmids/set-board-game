@@ -3,8 +3,8 @@
    Changes:
    - Robust viewport handling via CSS var --vh and ResizeObserver
    - layoutCards(): enforces min 4 columns, prevents overlap, caps card size
-   - Board container overflow-y:auto when needed
    - Removed redundant resize event listener to prevent race conditions
+   - Added requestAnimationFrame and debounce for stable initial layout
 */
 
 /******************* Firebase CONFIG ********************/
@@ -28,6 +28,7 @@ let currentRoomId  = null;
 let selected       = [];
 const COLORS       = ["red", "green", "purple"];
 let resizeObserver = null;
+let layoutTimeout = null;
 
 /******************* Viewport bugfix for iOS Safari ********************/
 function setVHVar(){
@@ -140,7 +141,10 @@ function joinRoom(roomId, isHost = false) {
   if (!resizeObserver) {
     const box = document.getElementById("board-container");
     if (box && window.ResizeObserver) {
-      resizeObserver = new ResizeObserver(() => layoutCards());
+      resizeObserver = new ResizeObserver(() => {
+        if (layoutTimeout) clearTimeout(layoutTimeout);
+        layoutTimeout = setTimeout(() => requestAnimationFrame(layoutCards), 100);
+      });
       resizeObserver.observe(box);
     }
   }
@@ -237,7 +241,8 @@ function drawBoard(cards) {
     board.appendChild(div);
   });
 
-  layoutCards();                        // подгоняем размеры
+  // Ensure layout is applied after DOM updates
+  requestAnimationFrame(layoutCards);
 }
 
 function layoutCards() {
@@ -251,6 +256,9 @@ function layoutCards() {
 
   if (!N || !box) return;
 
+  // Force reflow to ensure accurate dimensions
+  box.offsetWidth;
+
   // Account for padding and safe-area-insets
   const computedStyle = getComputedStyle(box);
   const paddingX = parseFloat(computedStyle.paddingLeft) + parseFloat(computedStyle.paddingRight);
@@ -259,9 +267,9 @@ function layoutCards() {
   const H = box.clientHeight - paddingY;
 
   // Calculate number of columns, prioritizing at least 4
-  let cols = Math.max(MIN_COLUMNS, Math.floor(W / (MIN_CARD_WIDTH + GAP)));
-  // Ensure we don't exceed available cards or screen width
-  cols = Math.min(cols, Math.floor(W / (MIN_CARD_WIDTH + GAP)), N);
+  const minWidthRequired = MIN_COLUMNS * MIN_CARD_WIDTH + (MIN_COLUMNS - 1) * GAP;
+  let cols = W >= minWidthRequired ? Math.max(MIN_COLUMNS, Math.floor(W / (MIN_CARD_WIDTH + GAP))) : Math.max(1, Math.floor(W / (MIN_CARD_WIDTH + GAP)));
+  cols = Math.min(cols, N); // Don't exceed number of cards
   let cardW = (W - GAP * (cols - 1)) / cols;
   cardW = Math.min(Math.max(cardW, MIN_CARD_WIDTH), MAX_CARD_WIDTH); // Clamp card width
   const cardH = cardW * 1.5; // Maintain 2:3 aspect ratio
@@ -272,20 +280,20 @@ function layoutCards() {
   box.style.overflowY = totalH > H ? "auto" : "hidden";
 
   // Apply styles to board for centering and consistent layout
-  board.style.display = "flex";
-  board.style.flexWrap = "wrap";
-  board.style.gap = `${GAP}px`;
-  board.style.width = `${cols * cardW + (cols - 1) * GAP}px`;
+  board.style.display = "flex !important";
+  board.style.flexWrap = "wrap !important";
+  board.style.gap = `${GAP}px !important`;
+  board.style.width = `${cols * cardW + (cols - 1) * GAP}px !important`;
   board.style.margin = "0 auto";
-  board.style.alignContent = "flex-start";
+  board.style.alignContent = "flex-start !important";
 
   // Apply card sizes
   Array.from(board.children).forEach(card => {
-    card.style.width = `${cardW}px`;
-    card.style.height = `${cardH}px`;
-    card.style.minWidth = `${cardW}px`;
-    card.style.minHeight = `${cardH}px`;
-    card.style.boxSizing = "border-box"; // Ensure padding/border included
+    card.style.width = `${cardW}px !important`;
+    card.style.height = `${cardH}px !important`;
+    card.style.minWidth = `${cardW}px !important`;
+    card.style.minHeight = `${cardH}px !important`;
+    card.style.boxSizing = "border-box !important";
   });
 }
 
