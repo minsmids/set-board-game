@@ -28,18 +28,22 @@ const COLORS = ["red", "green", "purple"];
 
 /******************* Telegram integration & bootstrap ********************/
 document.addEventListener("DOMContentLoaded", () => {
-  if (window.Telegram?.WebApp?.initData) {
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
+  const tg = window.Telegram?.WebApp;
 
-    const u = Telegram.WebApp.initDataUnsafe.user || {};
-    nickname = u.username || `${u.first_name || "user"}_${u.id || Date.now()}`;
+  // Check if the app is running in Telegram and user data is available
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    tg.ready();
+    tg.expand();
+
+    const u = tg.initDataUnsafe.user;
+    // Use username if available, otherwise construct a name
+    nickname = u.username || `${u.first_name || "user"}_${u.last_name || u.id}`;
     
-    // Extract room ID from deep link parameter (e.g., ?startapp=room123)
-    const roomIdFromLink = Telegram.WebApp.initDataUnsafe.start_param;
+    const roomIdFromLink = tg.initDataUnsafe.start_param;
     
     loginUser(roomIdFromLink);
   } else {
+    // Fallback for regular browser environment
     document.getElementById("login").style.display = "block";
   }
 });
@@ -93,10 +97,47 @@ function showLobby() {
 }
 
 /******************* Core game logic ********************/
-function createNewRoom() {
-    currentRoomId = db.ref("rooms").push().key;
+async function createNewRoom() {
+    let newRoomCode = generateRoomCode();
+    let attempts = 0;
+    const maxAttempts = 10; // Prevent infinite loops
+
+    // Check for uniqueness
+    while (await db.ref(`rooms/${newRoomCode}`).once("value").then(s => s.exists()) && attempts < maxAttempts) {
+        newRoomCode = generateRoomCode();
+        attempts++;
+    }
+
+    if (attempts === maxAttempts) {
+        alert("Не удалось создать уникальный код комнаты. Попробуйте еще раз.");
+        return;
+    }
+
+    currentRoomId = newRoomCode;
     console.log(`Creating new room: ${currentRoomId}`);
     joinRoom(currentRoomId, true);
+}
+
+function generateRoomCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit number
+}
+
+async function joinRoomByCode() {
+    const codeInput = document.getElementById("room-code-input");
+    const code = codeInput ? codeInput.value.trim() : "";
+
+    if (!code || code.length !== 6 || !/^[0-9]+$/.test(code)) {
+        alert("Пожалуйста, введите корректный 6-значный код комнаты.");
+        return;
+    }
+
+    const roomSnap = await db.ref(`rooms/${code}`).once("value");
+    if (roomSnap.exists()) {
+        console.log(`Joining room by code: ${code}`);
+        joinRoom(code);
+    } else {
+        alert("Комната с таким кодом не найдена.");
+    }
 }
 
 function joinRoom(roomId, isHost = false) {
@@ -232,6 +273,17 @@ function drawBoard(cards) {
     
     if(counterEl) {
         counterEl.innerText = `Возможных сетов: ${countSets(cards)}`;
+    }
+
+    // Display room code
+    let roomCodeEl = document.getElementById("room-code-display");
+    if (!roomCodeEl && playersEl) {
+        roomCodeEl = document.createElement("div");
+        roomCodeEl.id = "room-code-display";
+        playersEl.before(roomCodeEl); // Place it before players list
+    }
+    if (roomCodeEl && currentRoomId) {
+        roomCodeEl.innerText = `Код комнаты: ${currentRoomId}`;
     }
 
     cards.forEach((card, idx) => {

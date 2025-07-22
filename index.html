@@ -29,18 +29,22 @@
     <button onclick="manualLogin()">Play</button>
   </div>
 
-  <!-- Лобби для создания/присоединения к комнатам -->
+  '''  <!-- Лобби для создания/присоединения к комнатам -->
   <div id="lobby" style="display:none">
       <button onclick="createNewRoom()">Создать новую игру</button>
-      <!-- Сюда можно добавить поле для ввода ID комнаты -->
+      <div style="margin-top: 20px;">
+          <input type="text" id="room-code-input" placeholder="Введите код комнаты (6 цифр)" maxlength="6" />
+          <button onclick="joinRoomByCode()">Присоединиться по коду</button>
+      </div>
   </div>
 
   <!-- Основной игровой экран -->
   <div id="game" style="display:none">
     <div id="info">
+      <div id="room-code-display"></div> <!-- Добавлен элемент для кода комнаты -->
       <div id="players"></div>
       <div id="sets-count"></div>
-    </div>
+    </div>'''
 
     <div id="board-container">
       <div id="board"></div>
