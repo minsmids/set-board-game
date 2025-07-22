@@ -194,6 +194,7 @@ function endGame() {
 
 /******************* Rendering ********************/
 function drawBoard(cards) {
+  console.log("Rendering board with", cards.length, "cards"); // Debug log
   const board = document.getElementById("board");
   board.innerHTML = "";
 
