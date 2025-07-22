@@ -242,44 +242,66 @@ function drawBoard(cards) {
 function layoutCards() {
   const GAP = 10;
   const board = document.getElementById("board");
-  const box   = document.getElementById("board-container");
-  const N     = board.children.length;
+  const box = document.getElementById("board-container");
+  const N = board.children.length;
+  
   if (!N || !box) return;
 
-  const W = box.clientWidth;
-  const H = box.clientHeight;
+  const W = box.clientWidth - 20; // учитываем padding контейнера
+  const H = box.clientHeight - 20;
 
   let bestCols = 1;
-  let bestW = W;
-  let bestOverflow = Infinity;
+  let bestW = 0;
+  let bestFit = false;
 
-  // Iterate from higher number of columns downwards
-  for (let cols = N; cols >= 1; cols--) {
-    const w = (W - GAP * (cols - 1)) / cols;
-    const h = w * 3 / 2;
+  // Ищем оптимальное количество колонок
+  for (let cols = Math.min(N, Math.floor(W / 80)); cols >= 1; cols--) {
+    const cardW = (W - GAP * (cols - 1)) / cols;
+    const cardH = cardW * 1.5; // соотношение 2:3
     const rows = Math.ceil(N / cols);
-    const needH = rows * h + GAP * (rows - 1);
-    const overflow = Math.max(0, needH - H);
-
-    if (overflow === 0) {
-      bestCols = cols; // This will be the largest cols with perfect fit
-      bestW = w;
-      bestOverflow = 0;
-      break; // Found the largest number of columns that fits perfectly
-    } else if (overflow < bestOverflow) {
-      bestCols = cols;
-      bestW = w;
-      bestOverflow = overflow;
+    const totalH = rows * cardH + GAP * (rows - 1);
+    
+    // Минимальная ширина карты должна быть хотя бы 60px
+    if (cardW >= 60) {
+      if (totalH <= H) {
+        // Помещается без скролла - берем максимальные колонки
+        bestCols = cols;
+        bestW = cardW;
+        bestFit = true;
+        break;
+      } else if (!bestFit) {
+        // Не помещается, но это лучший вариант пока что
+        bestCols = cols;
+        bestW = cardW;
+      }
     }
   }
 
-  // If there is overflow, allow scrolling
-  box.style.overflowY = bestOverflow > 0 ? "auto" : "hidden";
+  // Если ничего не подошло, используем минимальные настройки
+  if (bestW === 0) {
+    bestCols = 1;
+    bestW = Math.max(60, W - GAP);
+  }
 
-  [...board.children].forEach(el=>{
-    el.style.width  = `${bestW}px`;
-    el.style.height = `${bestW*3/2}px`;
+  // Настройка контейнера для скролла если нужно
+  const cardH = bestW * 1.5;
+  const rows = Math.ceil(N / bestCols);
+  const totalH = rows * cardH + GAP * (rows - 1);
+  
+  box.style.overflowY = totalH > H ? "auto" : "hidden";
+  
+  // Применяем размеры к картам
+  Array.from(board.children).forEach(card => {
+    card.style.width = `${bestW}px`;
+    card.style.height = `${cardH}px`;
+    card.style.minWidth = `${bestW}px`;
+    card.style.minHeight = `${cardH}px`;
   });
+
+  // Обновляем стили board для правильного отображения
+  board.style.width = '100%';
+  board.style.maxWidth = `${bestCols * bestW + (bestCols - 1) * GAP}px`;
+  board.style.margin = '0 auto';
 }
 window.addEventListener("resize", layoutCards);
 
