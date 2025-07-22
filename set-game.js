@@ -30,6 +30,8 @@ const COLORS       = ["red", "green", "purple"];
 document.addEventListener("DOMContentLoaded", () => {
   const tg = window.Telegram?.WebApp;
 
+  showLobby(); // Always show lobby first
+
   if (tg && tg.initDataUnsafe?.user) {          // запущено в Telegram
     tg.ready(); tg.expand();
 
@@ -37,8 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
     nickname = u.username || `${u.first_name || "user"}_${u.id}`;
 
     loginUser(tg.initDataUnsafe.start_param);   // если пришли по приглашению
-  } else {
-    showLobby(); // обычный браузер - сразу показываем лобби
   }
 });
 
@@ -63,11 +63,11 @@ async function loginUser(roomIdFromLink = null) {
     if ((await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists()) {
       joinRoom(roomIdFromLink); return;
     }
-    alert("Комната уже не существует"); showLobby(); return;
+    alert("Комната уже не существует"); return;
   }
 
   // 3) новый пользователь – показываем лобби
-  showLobby();
+  // showLobby();
 }
 
 function showLobby() {
