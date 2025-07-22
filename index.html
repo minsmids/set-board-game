@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Set Game</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="login">
+    <input type="text" id="nickname" placeholder="Enter your name" />
+    <button onclick="joinGame()">Play</button>
+  </div>
+
+  <div id="game" style="display: none">
+    <div id="info">
+      <div id="players"></div>
+      <div id="sets-count"></div>
+    </div>
+    <div id="board-container">
+      <div id="board"></div>
+    </div>
+    <div id="controls">
+      <button onclick="addMoreCards()">+3 cards</button>
+      <button onclick="newGame()">New Game</button>
+    </div>
+  </div>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="set-game.js"></script>
+
+</body>
+</html>
