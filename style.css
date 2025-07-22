@@ -82,16 +82,19 @@ body {
   min-height: 0;
   display: flex;
   justify-content: center;
+  align-items: center; /* Center vertically for consistent layout */
   overflow: hidden;
 }
 
 #board {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr); /* Enforce 3 rows for 12 cards */
   gap: 10px;
   padding: 10px;
   width: 100%;
   max-width: 1200px; /* Prevent overly wide boards on large screens */
+  min-height: 0; /* Allow shrinking within flex container */
   box-sizing: border-box;
 }
 
