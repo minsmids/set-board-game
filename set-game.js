@@ -62,8 +62,11 @@ async function loginUser(roomIdFromLink = null) {
   if (roomIdFromLink) {
     if ((await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists()) {
       joinRoom(roomIdFromLink); return;
+    } else {
+      joinRoom(roomIdFromLink, true); // Create new room if it doesn't exist
+      return;
     }
-    // alert("Комната уже не существует"); return;
+    // Removed alert("Комната уже не существует"); return;
   }
 
   // 3) новый пользователь – показываем лобби
