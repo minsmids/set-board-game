@@ -87,29 +87,32 @@ body {
 /* ===== Central board area ===== */
 #board-container {
   flex: 1 1 0%;
-  min-height: 0;      /* даём flex-у реально ужаться */
+  min-height: 0;
   display: flex;
   justify-content: center;
-  overflow-y: auto;   /* если не влезло — аккуратный скролл вместо обрезания */
+  align-items: flex-start; /* выравнивание по верху */
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding: 10px; /* добавляем отступы */
 }
 
 #board {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-content: flex-start; /* контент прижат к верху */
   gap: 10px;
-  padding: 10px 0;
+  width: 100%;
   box-sizing: border-box;
+  min-height: min-content; /* важно для правильного расчета */
 }
 
 /* ===== Card ===== */
 .card {
-  
   background: var(--secondary-bg);
   border: 2px solid var(--hint);
   border-radius: 8px;
-  padding: 4% 2%;
+  padding: 8px;
   display: flex;
   flex-direction: column;
   justify-content: space-around;
@@ -118,16 +121,52 @@ body {
   cursor: pointer;
   transition: transform 0.08s ease, border-color 0.08s ease;
   will-change: transform;
+  
+  /* Фиксированные пропорции */
+  aspect-ratio: 2/3;
+  flex-shrink: 0; /* не сжимать карты */
 }
 
-.card:hover    { border-color: var(--link); }
+.card:hover {
+  border-color: var(--link);
+}
+
 .card.selected {
   border-color: var(--link);
   transform: scale(1.05);
   box-shadow: 0 0 10px rgba(0,123,255,.45);
 }
 
-.symbol { width: 80%; height: auto; }
+.symbol {
+  width: 90%;
+  height: auto;
+  flex-shrink: 0;
+}
+
+/* Медиа-запросы для разных размеров экрана */
+ @media (max-width: 480px) {
+  #board-container {
+    padding: 5px;
+  }
+  
+  #board {
+    gap: 8px;
+  }
+  
+  .card {
+    padding: 6px;
+  }
+}
+
+ @media (min-width: 768px) {
+  #board-container {
+    padding: 15px;
+  }
+  
+  #board {
+    gap: 12px;
+  }
+}
 
 /* ===== Buttons & inputs ===== */
 button {
