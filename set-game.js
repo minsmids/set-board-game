@@ -1,9 +1,10 @@
 /* ===== SET Multiplayer (room-based) for Telegram Web App =====
-   Итоговый исправленный код:
-   - Создаёт комнату по коду, если та не существует
-   - joinRoomByCode() завершена корректно
-   - initializeGame() больше не удаляет игроков, а обнуляет счёт
-   - initializeGame() вызывается до записи хоста, чтобы он не стирал сам себя
+   Исправленная версия: 
+   - joinRoomByCode() теперь закрыта фигурной скобкой и создаёт комнату, если её нет.
+   - loginUser() одинаково обрабатывает start_param (Telegram) и ?room= в URL: если комнаты нет — создаёт.
+   - initializeGame() больше не удаляет узел players; очки обнуляются корректно.
+   - Порядок вызова initializeGame() перенесён до записи игрока (или players не трогаются).
+   - Лобби показывается при входе без кода комнаты.
 */
 
 /******************* Firebase CONFIG ********************/
@@ -40,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     nickname = u.username || `${u.first_name || "user"}_${u.id}`;
   }
 
+  // код комнаты из Telegram start_param или ?room=<code> в URL
   const startParam = tg?.initDataUnsafe?.start_param || new URLSearchParams(location.search).get("room");
   loginUser(startParam);
 });
@@ -52,16 +54,23 @@ function manualLogin() {
 }
 
 async function loginUser(roomIdFromLink = null) {
+  // 1) Попытка восстановить предыдущую сессию
   const snap = await db.ref(`playerSessions/${nickname}`).once("value");
   const prevRoom = snap.val();
+  if (prevRoom && (await db.ref(`rooms/${prevRoom}`).once("value")).exists()) {
+    // Решение: не форсим автоподключение к старой комнате, т.к. пользователь мог уйти.
+    // Если нужно — можно раскомментировать следующую строку:
+    // return joinRoom(prevRoom);
+  }
   if (prevRoom) db.ref(`playerSessions/${nickname}`).remove();
 
+  // 2) Пришли по приглашению / ссылке
   if (roomIdFromLink) {
     const exists = (await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists();
-    joinRoom(roomIdFromLink, !exists);
-    return;
+    return joinRoom(roomIdFromLink, !exists); // !exists => мы хост, создаём комнату
   }
 
+  // 3) Новый пользователь — остаёмся в лобби
   showLobby();
 }
 
@@ -83,8 +92,8 @@ async function createNewRoom() {
 async function joinRoomByCode() {
   const code = document.getElementById("room-code-input")?.value.trim();
   if (!/^\d{6}$/.test(code)) return alert("Введите корректный 6-значный код");
-  const roomExists = (await db.ref(`rooms/${code}`).once("value")).exists();
-  joinRoom(code, !roomExists);
+  const exists = (await db.ref(`rooms/${code}`).once("value")).exists();
+  joinRoom(code, !exists);
 }
 
 /******************* Core room handshake ********************/
@@ -95,6 +104,7 @@ async function joinRoom(roomId, isHost = false) {
   document.getElementById("lobby").style.display = "none";
   document.getElementById("game").style.display  = "block";
 
+  // Ссылка-приглашение вида https://t.me/<bot>/setgame?startapp=<roomId>
   const linkElement = document.getElementById("invite-link");
   if (linkElement) {
     const bot  = Telegram?.WebApp?.initDataUnsafe?.bot_username || "setboardgame_bot";
@@ -117,9 +127,11 @@ async function joinRoom(roomId, isHost = false) {
 
   if (isHost) await initializeGame();
 
+  // Регистрируем игрока (после initializeGame, чтобы не стереть себя)
   db.ref(`rooms/${roomId}/players/${nickname}`).set({ score: 0 });
   db.ref(`playerSessions/${nickname}`).set(roomId);
 
+  // Подписки на изменения
   db.ref(`rooms/${roomId}/game/cards`).on("value", snap => drawBoard(snap.val() || []));
   db.ref(`rooms/${roomId}/players`).on("value", snap => {
     const list = Object.entries(snap.val() || {})
@@ -130,13 +142,15 @@ async function joinRoom(roomId, isHost = false) {
 
 /******************* Game lifecycle ********************/
 async function initializeGame() {
-  const plSnap = await db.ref(`rooms/${currentRoomId}/players`).once("value");
-  const players = plSnap.val() || {};
+  // Обнуляем очки, НЕ удаляя игроков
+  const playersSnap = await db.ref(`rooms/${currentRoomId}/players`).once("value");
+  const players = playersSnap.val() || {};
   const updates = {};
   Object.keys(players).forEach(n => updates[`${n}/score`] = 0);
   if (Object.keys(updates).length)
     await db.ref(`rooms/${currentRoomId}/players`).update(updates);
 
+  // Создаём и тасуем колоду
   const deck = [];
   for (let c=0;c<3;c++) for (let s=0;s<3;s++)
     for (let f=0;f<3;f++) for (let n=1;n<=3;n++) deck.push([c,s,f,n]);
@@ -149,5 +163,105 @@ async function initializeGame() {
   selected = [];
 }
 
-/******************* Остальной код не менялся ********************/
-// ... остаётся без изменений
+function newGame() {
+  if (confirm("Новая партия?")) initializeGame();
+}
+
+function addMoreCards() {
+  db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
+    const {cards=[], availableCards:avail=[]} = snap.val() || {};
+    if (avail.length < 3) return alert("Нет больше карт!");
+    db.ref(`rooms/${currentRoomId}/game`).update({
+      cards: [...cards, ...avail.splice(0,3)],
+      availableCards: avail
+    });
+  });
+}
+
+/******************* Interaction ********************/
+function selectCard(idx) {
+  selected = selected.includes(idx) ? selected.filter(i => i !== idx) : [...selected, idx];
+  if (selected.length === 3) checkSet();
+  else db.ref(`rooms/${currentRoomId}/game/cards`).once("value", s => drawBoard(s.val()));
+}
+
+function checkSet() {
+  db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
+    const {cards=[], availableCards:avail=[]} = snap.val() || {};
+    const [a,b,c] = selected.map(i => cards[i]);
+    const isSet = [0,1,2,3].every(i => {
+      const s = new Set([a[i], b[i], c[i]]); return s.size === 1 || s.size === 3;
+    });
+
+    if (isSet) {
+      let newCards = [...cards];
+      selected.sort((x,y)=>y-x).forEach(i => newCards.splice(i,1));
+      if (newCards.length < 12 && avail.length >= 3) {
+        newCards = [...newCards, ...avail.splice(0,3)];
+        db.ref(`rooms/${currentRoomId}/game/availableCards`).set(avail);
+      }
+      db.ref(`rooms/${currentRoomId}/game/cards`).set(newCards);
+      db.ref(`rooms/${currentRoomId}/players/${nickname}/score`).transaction(s => (s||0) + 1);
+      Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light");
+    } else alert("Это не SET");
+
+    selected = [];
+    db.ref(`rooms/${currentRoomId}/game/cards`).once("value", s => drawBoard(s.val()));
+  });
+}
+
+function endGame() {
+  if (confirm("Завершить игру и удалить комнату?"))
+    db.ref(`rooms/${currentRoomId}`).remove().then(showLobby);
+}
+
+/******************* Rendering ********************/
+function drawBoard(cards) {
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+
+  // инфо-бар (код комнаты + счётчик сетов)
+  document.getElementById("room-code-display").innerText = `Код комнаты: ${currentRoomId}`;
+  document.getElementById("sets-count").innerText        = `Возможных SET-ов: ${countSets(cards)}`;
+
+  cards.forEach((card, idx) => {
+    const div = document.createElement("div");
+    div.className = "card";
+    if (selected.includes(idx)) div.classList.add("selected");
+    div.onclick = () => selectCard(idx);
+
+    const [color,shape,fill,count] = card, colTxt = COLORS[color];
+    for (let n=0; n<count; n++) {
+      const el = document.createElement("div");
+      el.className = "symbol";
+      el.innerHTML = getSVG(shape, fill, colTxt);
+      div.appendChild(el);
+    }
+    board.appendChild(div);
+  });
+}
+
+/******************* Helpers ********************/
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
+
+function countSets(c){
+  let n=c.length,res=0; if(n<3) return 0;
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) for(let k=j+1;k<n;k++){
+    if([0,1,2,3].every(p=>{ const s=new Set([c[i][p],c[j][p],c[k][p]]); return s.size===1||s.size===3; })) res++;
+  }
+  return res;
+}
+
+/* SVG-генератор: shape 0=овал, 1=ромб, 2=волна; fill 0=пустой, 1=штрих, 2=заливка */
+function getSVG(shape, fill, color) {
+  const pid      = `pat-${color}-${Math.random().toString(36).slice(2)}`;
+  const fillAttr = {0:"none", 1:`url(#${pid})`, 2:color}[fill];
+  const stroke   = color;
+  const pat      = `<pattern id="${pid}" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M0 0 l4 4" stroke="${color}" stroke-width="1"/></pattern>`;
+  const wrap = (body) => `<svg viewBox="0 0 100 50"><defs>${fill===1?pat:""}</defs>${body}</svg>`;
+
+  if (shape === 0) return wrap(`<ellipse cx="50" cy="25" rx="40" ry="15" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+  if (shape === 1) return wrap(`<polygon points="50,5 95,25 50,45 5,25" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+  // Волна (shape 2)
+  return wrap(`<path d="M5 25 Q20 5 35 25 T65 25 T95 25" fill="${fillAttr}" stroke="${stroke}" stroke-width="3"/>`);
+}
