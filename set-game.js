@@ -107,8 +107,10 @@ function joinRoom(roomId, isHost = false) {
   if (linkDisplay) {
     const bot = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
     const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;
+    console.log("Generated invite link:", link); // Debug log
     linkDisplay.innerText = `Пригласить: ${link}`;
     linkDisplay.style.display = "block";
+    console.log("Link display element updated."); // Debug log
   }
 
   db.ref(`rooms/${roomId}/players/${nickname}`).set({score:0});
