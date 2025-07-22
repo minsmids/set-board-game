@@ -252,25 +252,21 @@ function layoutCards() {
   let bestCols = 1;
   let bestW = W;
   let bestOverflow = Infinity;
-  let foundPerfectFit = false; // Flag to track if a perfect fit was found
 
-  for (let cols = 1; cols <= N; cols++) {
+  // Iterate from higher number of columns downwards
+  for (let cols = N; cols >= 1; cols--) {
     const w = (W - GAP * (cols - 1)) / cols;
-    const h = w * 3 / 2; // Card height based on 2:3 aspect ratio
+    const h = w * 3 / 2;
     const rows = Math.ceil(N / cols);
     const needH = rows * h + GAP * (rows - 1);
     const overflow = Math.max(0, needH - H);
 
     if (overflow === 0) {
-      // If a perfect fit is found, we want to find the one with the most columns
-      if (!foundPerfectFit || cols > bestCols) {
-        bestCols = cols;
-        bestW = w;
-        bestOverflow = 0;
-        foundPerfectFit = true;
-      }
-    } else if (!foundPerfectFit && overflow < bestOverflow) {
-      // If no perfect fit yet, find the one with minimal overflow
+      bestCols = cols; // This will be the largest cols with perfect fit
+      bestW = w;
+      bestOverflow = 0;
+      break; // Found the largest number of columns that fits perfectly
+    } else if (overflow < bestOverflow) {
       bestCols = cols;
       bestW = w;
       bestOverflow = overflow;
