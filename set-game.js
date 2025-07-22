@@ -1,169 +1,9 @@
 /* ===== SET Multiplayer (room-based) for Telegram Web App =====
-   Modified to enforce 4-column card layout.
+   Modified to enforce strict 4-column card layout with multiple rows.
    Changes:
-   - Updated drawBoard() to structure cards in a 4-column grid
-   - Rewrote layoutCards() to calculate fixed 4-column layout
-   - Maintained existing game logic and Telegram integration
-*/
-
-/******************* Firebase CONFIG ********************/
-const firebaseConfig = {
-  apiKey: "AIzaSy…",                     // ←-- свои ключи
-  authDomain: "set-telegram.firebaseapp.com",
-  databaseURL: "https://set-telegram-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "set-telegram",
-  storageBucket: "set-telegram.appspot.com",
-  messagingSenderId: "772429781868",
-  appId: "1:772429781868:web:bbdf0385402df96e36b149",
-  measurementId: "G-SSKXER5X99"
-};
-
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-/******************* Global state ********************/
-let nickname       = "";
-let currentRoomId  = null;
-let selected       = [];
-const COLORS       = ["red", "green", "purple"];
-let resizeObserver = null;
-let layoutTimeout = null;
-
-/******************* Viewport bugfix for iOS Safari ********************/
-function setVHVar(){
-  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-}
-window.addEventListener('resize', setVHVar);
-window.addEventListener('orientationchange', setVHVar);
-setVHVar();
-
-/******************* Telegram bootstrap ********************/
-document.addEventListener("DOMContentLoaded", () => {
-  const tg = window.Telegram?.WebApp;
-
-  if (tg && tg.initDataUnsafe?.user) {          // запущено в Telegram
-    tg.ready(); tg.expand();
-
-    const u = tg.initDataUnsafe.user;
-    nickname = u.username || `${u.first_name || "user"}_${u.id}`;
-
-    loginUser(tg.initDataUnsafe.start_param);   // если пришли по приглашению
-  } else {
-    document.getElementById("login").style.display = "block"; // обычный браузер
-  }
-});
-
-/******************* Auth flows ********************/
-function manualLogin() {
-  nickname = document.getElementById("nickname")?.value.trim();
-  if (!nickname) { alert("Введите имя"); return; }
-  loginUser();
-}
-
-async function loginUser(roomIdFromLink = null) {
-  // 1) попытка восстановить предыдущую сессию
-  const snap = await db.ref(`playerSessions/${nickname}`).once("value");
-  const prevRoom = snap.val();
-  if (prevRoom && (await db.ref(`rooms/${prevRoom}`).once("value")).exists()) {
-    joinRoom(prevRoom); return;
-  }
-  if (prevRoom) db.ref(`playerSessions/${nickname}`).remove();   // зачистить «битую» сессию
-
-  // 2) если пришли по приглашению
-  if (roomIdFromLink) {
-    if ((await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists()) {
-      joinRoom(roomIdFromLink); return;
-    }
-    alert("Комната уже не существует"); showLobby(); return;
-  }
-
-  // 3) новый пользователь – показываем лобби
-  showLobby();
-}
-
-function showLobby() {
-  ["login","game"].forEach(id => document.getElementById(id).style.display = "none");
-  document.getElementById("lobby").style.display = "block";
-}
-
-/******************* Lobby actions ********************/
-async function createNewRoom() {
-  let code, attempts = 0;
-  do { code = Math.floor(100000 + Math.random()*900000).toString(); }           // 6-digits
-  while ((await db.ref(`rooms/${code}`).once("value")).exists() && ++attempts<10);
-  if (attempts===10) return alert("Не удалось создать комнату, попробуйте ещё");
-  currentRoomId = code;
-  joinRoom(code, true);
-}
-
-async function joinRoomByCode() {
-  const code = document.getElementById("room-code-input")?.value.trim();
-  if (!/^\d{6}$/.test(code)) return alert("Введите корректный 6-значный код");
-  if (!(await db.ref(`rooms/${code}`).once("value")).exists())
-    return alert("Комната не найдена");
-  joinRoom(code);
-}
-
-/******************* Core room handshake ********************/
-function joinRoom(roomId, isHost = false) {
-  currentRoomId = roomId;
-
-  document.getElementById("login").style.display  = "none";
-  document.getElementById("lobby").style.display  = "none";
-  document.getElementById("game").style.display   = "block";
-
-  /* приглашение – ссылка вида
-     https://t.me/<bot>/setgame?startapp=<roomId> */
-  const btn = document.getElementById("invite-btn");
-  if (btn) {
-    const bot = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
-    const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;
-    btn.onclick = () => Telegram.WebApp.openTelegramLink(link);
-    btn.style.display = "block";
-  }
-
-  db.ref(`rooms/${roomId}/players/${nickname}`).set({score:0});
-  db.ref(`playerSessions/${nickname}`).set(roomId);
-
-  if (isHost) initializeGame();
-
-  db.ref(`rooms/${roomId}/game/cards`)
-    .on("value", snap => drawBoard(snap.val() || []));
-  db.ref(`rooms/${roomId}/players`)
-    .on("value", snap => {
-      const list = Object.entries(snap.val()||{})
-        .map(([n,{score=0}])=>`${n}: ${score}`).join("  ");
-      document.getElementById("players").innerHTML = list;
-    });
-
-  // Attach ResizeObserver once
-  if (!resizeObserver) {
-    const box = document.getElementById("board-container");
-    if (box && window.ResizeObserver) {
-      resizeObserver = new ResizeObserver(() => {
-        if (layoutTimeout) clearTimeout(layoutTimeout);
-        layoutTimeout = setTimeout(() => requestAnimationFrame(layoutCards), 200);
-      });
-      resizeObserver.observe(box);
-    }
-  }
-
-  // Force initial layout with retries
-  let attempt = 0;
-  const ensureLayout = () => {
-    requestAnimationFrame(layoutCards);
-    if (attempt++ < 3 && document.getElementById("board").children.length > 0) {
-      setTimeout(ensureLayout, 200ව
-
-System: I notice you want to rewrite the rendering logic for a SET game to enforce a 4-column layout for the cards. I'll help create a modified version of the JavaScript and CSS to achieve this, ensuring the cards are displayed in a strict 4-column grid. Since this appears to be an update to existing artifacts, I'll use the same artifact_id for the JavaScript file and create a new one for the CSS changes.
-
-<xaiArtifact artifact_id="cd4c5214-66dd-45e9-8197-b652c9108cac" artifact_version_id="da7c05ed-923c-4d9f-83fe-b9b7c1b947bb" title="set-game.js" contentType="text/javascript">
-/* ===== SET Multiplayer (room-based) for Telegram Web App =====
-   Modified to enforce strict 4-column card layout.
-   Changes:
-   - Rewrote drawBoard() to organize cards into rows of exactly 4 columns
-   - Updated layoutCards() to compute sizes for a fixed 4-column grid
-   - Preserved all existing game logic and Telegram integration
+   - Fixed drawBoard() to ensure rows of exactly 4 cards
+   - Corrected layoutCards() card count calculation
+   - Added debug logs for layout verification
 */
 
 /******************* Firebase CONFIG ********************/
@@ -389,13 +229,10 @@ function drawBoard(cards) {
 
   // Create rows of exactly 4 cards
   const cardsPerRow = 4;
+  console.log(`drawBoard: Rendering ${cards.length} cards in rows of ${cardsPerRow}`);
   for (let i = 0; i < cards.length; i += cardsPerRow) {
     const row = document.createElement("div");
     row.className = "card-row";
-    row.style.display = "flex";
-    row.style.justifyContent = "center";
-    row.style.gap = "8px";
-    row.style.marginBottom = "8px";
 
     // Add up to 4 cards per row
     for (let j = 0; j < cardsPerRow && i + j < cards.length; j++) {
@@ -408,7 +245,6 @@ function drawBoard(cards) {
 
       const [color, shape, fill, count] = card;
       const colTxt = COLORS[color];
-家人
       for (let n = 0; n < count; n++) {
         const el = document.createElement("div");
         el.className = "symbol";
@@ -420,23 +256,29 @@ function drawBoard(cards) {
     board.appendChild(row);
   }
 
+  console.log(`drawBoard: Created ${board.children.length} rows`);
+
   // Trigger layout after DOM updates
   if (layoutTimeout) clearTimeout(layoutTimeout);
   layoutTimeout = setTimeout(() => requestAnimationFrame(layoutCards), 100);
 }
 
 function layoutCards() {
-  const GAP = 8; // Matches CSS gap
+  const GAP = 8;
   const MIN_CARD_WIDTH = 60;
   const MAX_CARD_WIDTH = 100;
-  const FIXED_COLUMNS = 4; // Enforce exactly 4 columns
+  const FIXED_COLUMNS = 4;
   const board = document.getElementById("board");
   const box = document.getElementById("board-container");
-  const N = board.children.length * FIXED_COLUMNS; // Total cards (rows * 4)
+  const rows = board.children;
+  const totalCards = Array.from(rows).reduce((sum, row) => sum + row.children.length, 0);
 
-  if (!N || !box) return;
+  if (!totalCards || !box) {
+    console.log("layoutCards: No cards or container found");
+    return;
+  }
 
-  // Force reflow and get accurate container width
+  // Get container dimensions
   box.offsetWidth;
   const rect = box.getBoundingClientRect();
   const paddingX = parseFloat(getComputedStyle(box).paddingLeft) + parseFloat(getComputedStyle(box).paddingRight);
@@ -444,16 +286,16 @@ function layoutCards() {
   const W = rect.width - paddingX;
   const H = rect.height - paddingY;
 
-  console.log(`layoutCards: container width=${rect.width}, W=${W}, H=${H}, total cards=${N}`);
+  console.log(`layoutCards: container width=${rect.width}, W=${W}, H=${H}, total cards=${totalCards}`);
 
-  // Calculate card size for exactly 4 columns
+  // Calculate card size for 4 columns
   let cardW = (W - GAP * (FIXED_COLUMNS - 1)) / FIXED_COLUMNS;
   cardW = Math.min(Math.max(cardW, MIN_CARD_WIDTH), MAX_CARD_WIDTH);
-  const cardH = cardW * 1.5; // 2:3 aspect ratio
-  const rows = Math.ceil(N / FIXED_COLUMNS);
-  const totalH = rows * cardH + GAP * (rows - 1);
+  const cardH = cardW * 1.5;
+  const rowCount = Math.ceil(totalCards / FIXED_COLUMNS);
+  const totalH = rowCount * cardH + GAP * (rowCount - 1);
 
-  console.log(`layoutCards: cols=${FIXED_COLUMNS}, cardW=${cardW}, cardH=${cardH}, rows=${rows}, totalH=${totalH}`);
+  console.log(`layoutCards: cols=${FIXED_COLUMNS}, cardW=${cardW}, cardH=${cardH}, rows=${rowCount}, totalH=${totalH}`);
 
   // Enable scrolling if needed
   box.style.overflowY = totalH > H ? "auto" : "hidden";
@@ -464,13 +306,13 @@ function layoutCards() {
   board.style.display = "block";
 
   // Style each row
-  Array.from(board.children).forEach(row => {
+  Array.from(rows).forEach((row, rowIndex) => {
     row.style.width = `${FIXED_COLUMNS * cardW + (FIXED_COLUMNS - 1) * GAP}px`;
     row.style.display = "flex";
     row.style.gap = `${GAP}px`;
-    row.style.marginBottom = `${GAP}px`;
+    row.style.marginBottom = rowIndex < rows.length - 1 ? `${GAP}px` : "0";
 
-    // Style each card in the row
+    // Style each card
     Array.from(row.children).forEach(card => {
       card.style.width = `${cardW}px`;
       card.style.height = `${cardH}px`;
