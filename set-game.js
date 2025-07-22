@@ -1,4 +1,4 @@
-'''/* ===== SET Multiplayer (Room-based) for Telegram Web App =====
+/* ===== SET Multiplayer (Room-based) for Telegram Web App =====
    Pure JavaScript bundle (no HTML / <script> tags).
    Requires the following globals loaded *before* this file:
      1) Telegram Web App SDK – https://telegram.org/js/telegram-web-app.js
@@ -26,7 +26,7 @@ let currentRoomId = null;
 let selected = [];
 const COLORS = ["red", "green", "purple"];
 
-'''/******************* Telegram integration & bootstrap ********************/
+/******************* Telegram integration & bootstrap ********************/
 document.addEventListener("DOMContentLoaded", () => {
   const tg = window.Telegram?.WebApp;
   console.log("DOMContentLoaded fired.");
@@ -120,7 +120,6 @@ function showLobby() {
     if (gameDiv) gameDiv.style.display = "none";
     console.log("UI display states: login=", loginDiv?.style.display, ", lobby=", lobbyDiv?.style.display, ", game=", gameDiv?.style.display);
 }
-'''
 
 /******************* Core game logic ********************/
 async function createNewRoom() {
@@ -392,4 +391,3 @@ function checkSet() {
         db.ref(`rooms/${currentRoomId}/game/cards`).once("value", (s) => drawBoard(s.val()));
     });
 }
-'''
