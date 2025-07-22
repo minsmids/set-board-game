@@ -1,8 +1,9 @@
 /* ===== SET Multiplayer (room-based) for Telegram Web App =====
-   Pure JavaScript bundle (no HTML <script> tags).
-   Requires the following globals loaded *before* this file:
-     1) Telegram Web-App SDK – https://telegram.org/js/telegram-web-app.js
-     2) Firebase v8 (app + database) – firebase-app.js / firebase-database.js
+   Fixed layout bugs for desktop & iPhone (iOS Safari 16+).
+   Changes:
+   - Robust viewport handling via CSS var --vh and ResizeObserver
+   - layoutCards(): chooses best columns, falls back to scroll instead of cropping
+   - Board container overflow-y:auto when needed
 */
 
 /******************* Firebase CONFIG ********************/
@@ -25,6 +26,15 @@ let nickname       = "";
 let currentRoomId  = null;
 let selected       = [];
 const COLORS       = ["red", "green", "purple"];
+let resizeObserver = null;
+
+/******************* Viewport bugfix for iOS Safari ********************/
+function setVHVar(){
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+}
+window.addEventListener('resize', setVHVar);
+window.addEventListener('orientationchange', setVHVar);
+setVHVar();
 
 /******************* Telegram bootstrap ********************/
 document.addEventListener("DOMContentLoaded", () => {
@@ -106,7 +116,7 @@ function joinRoom(roomId, isHost = false) {
   const btn = document.getElementById("invite-btn");
   if (btn) {
     const bot = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
-    const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;     // 
+    const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;
     btn.onclick = () => Telegram.WebApp.openTelegramLink(link);
     btn.style.display = "block";
   }
@@ -124,6 +134,15 @@ function joinRoom(roomId, isHost = false) {
         .map(([n,{score=0}])=>`${n}: ${score}`).join("  ");
       document.getElementById("players").innerHTML = list;
     });
+
+  // Attach ResizeObserver once
+  if (!resizeObserver) {
+    const box = document.getElementById("board-container");
+    if (box && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(() => layoutCards());
+      resizeObserver.observe(box);
+    }
+  }
 }
 
 /******************* Game lifecycle ********************/
@@ -198,7 +217,7 @@ function drawBoard(cards) {
   board.innerHTML = "";
 
   // инфо-бар (код комнаты + счётчик сетов)
-  document.getElementById("room-code-display").innerText = `Код комнаты: ${currentRoomId}`;  // 
+  document.getElementById("room-code-display").innerText = `Код комнаты: ${currentRoomId}`;
   document.getElementById("sets-count").innerText        = `Возможных SET-ов: ${countSets(cards)}`;
 
   cards.forEach((card,idx) => {
@@ -217,23 +236,38 @@ function drawBoard(cards) {
     board.appendChild(div);
   });
 
-  layoutCards();                        // подгоняем размеры без скролла
+  layoutCards();                        // подгоняем размеры
 }
 
 function layoutCards() {
-  const GAP=10, board=document.getElementById("board"),
-        box=document.getElementById("board-container"),
-        N=board.children.length;
-  if (!N) return;
+  const GAP = 10;
+  const board = document.getElementById("board");
+  const box   = document.getElementById("board-container");
+  const N     = board.children.length;
+  if (!N || !box) return;
 
-  const W=box.clientWidth, H=box.clientHeight;
-  let bestCols=1,bestW=W;
+  const W = box.clientWidth;
+  const H = box.clientHeight;
 
-  for (let cols=1; cols<=N; cols++) {                        // 
-    const w=(W-GAP*(cols-1))/cols, h=w*3/2,
-          rows=Math.ceil(N/cols), needH=rows*h+GAP*(rows-1);
-    if (needH<=H) { bestCols=cols; bestW=w; break; }
+  let bestCols = 1;
+  let bestW = W;
+  let bestOverflow = Infinity;
+
+  for (let cols = 1; cols <= N; cols++) {
+    const w = (W - GAP * (cols - 1)) / cols;
+    const h = w * 3 / 2;
+    const rows = Math.ceil(N / cols);
+    const needH = rows * h + GAP * (rows - 1);
+    const overflow = Math.max(0, needH - H);
+
+    // pick first fully fitting variant OR variant with minimal overflow
+    if (overflow === 0) { bestCols = cols; bestW = w; bestOverflow = 0; break; }
+    if (overflow < bestOverflow) { bestCols = cols; bestW = w; bestOverflow = overflow; }
   }
+
+  // If there is overflow, allow scrolling
+  box.style.overflowY = bestOverflow > 0 ? "auto" : "hidden";
+
   [...board.children].forEach(el=>{
     el.style.width  = `${bestW}px`;
     el.style.height = `${bestW*3/2}px`;

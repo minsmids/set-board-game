@@ -8,14 +8,20 @@
   --button:        var(--tg-theme-button-color, #007bff);
   --button-text:   var(--tg-theme-button-text-color, #fff);
   --secondary-bg:  var(--tg-theme-secondary-bg-color, #fff);
+
+  /* JS sets this for iOS Safari fallback */
+  --vh: 1vh;
 }
 
-/* динамический viewport: 100dvh поддерживается iOS 15.4+ / Android 12+  */
-html,
-body {
-  height: 100dvh;
-  /* fallback для старых движков Safari/Chrome: */
-  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+/* dynamic viewport: use new units when available, fall back to JS var */
+html, body {
+  height: calc(var(--vh, 1vh) * 100);
+}
+@supports (height: 100dvh) {
+  html, body { height: 100dvh; }
+}
+@supports (height: 100svh) {
+  html, body { height: 100svh; }
 }
 
 body {
@@ -27,6 +33,7 @@ body {
            env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
   box-sizing: border-box;
   overscroll-behavior-y: none;          /* отключаем pull-to-refresh */
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ================= Layouts ================= */
@@ -45,6 +52,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0; /* Safari flex fix */
 }
 
 /* ===== Top / bottom bars ===== */
@@ -82,7 +90,8 @@ body {
   min-height: 0;      /* даём flex-у реально ужаться */
   display: flex;
   justify-content: center;
-  overflow: hidden;   /* скролл больше не нужен */
+  overflow-y: auto;   /* если не влезло — аккуратный скролл вместо обрезания */
+  -webkit-overflow-scrolling: touch;
 }
 
 #board {
@@ -90,6 +99,8 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
+  padding: 10px 0;
+  box-sizing: border-box;
 }
 
 /* ===== Card ===== */
@@ -106,6 +117,7 @@ body {
   box-sizing: border-box;
   cursor: pointer;
   transition: transform 0.08s ease, border-color 0.08s ease;
+  will-change: transform;
 }
 
 .card:hover    { border-color: var(--link); }
