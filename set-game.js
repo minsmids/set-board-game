@@ -108,7 +108,7 @@ function joinRoom(roomId, isHost = false) {
     const bot = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
     const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;
     linkElement.href = link;
-    linkElement.innerText = link;
+    linkElement.innerText = `Пригласить: ${link}`;
     linkElement.onclick = async (e) => {
       e.preventDefault(); // Prevent default link navigation
       try {
