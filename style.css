@@ -1,121 +1,133 @@
-/* Basic styles */
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: #f0f0f0;
-  color: #333;
-  margin: 0;
-  padding: 10px;
-  box-sizing: border-box;
-  overscroll-behavior-y: none; /* Prevents pull-to-refresh in web-view */
+/* ===== Telegram‑friendly baseline ===== */
+:root {
+  /* Dynamic colors from Telegram themes with fallbacks */
+  --bg:            var(--tg-theme-bg-color, #f0f0f0);
+  --text:          var(--tg-theme-text-color, #333);
+  --hint:          var(--tg-theme-hint-color, #888);
+  --link:          var(--tg-theme-link-color, #007bff);
+  --button:        var(--tg-theme-button-color, #007bff);
+  --button-text:   var(--tg-theme-button-text-color, #fff);
+  --secondary-bg:  var(--tg-theme-secondary-bg-color, #fff);
 }
 
-/* Layout containers */
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0)
+           env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  overscroll-behavior-y: none;            /* Disable pull-to-refresh */
+  box-sizing: border-box;
+}
+
+/* =================   Layouts   ================= */
 #login, #lobby {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 80vh;
+  height: 100%;
+  gap: 12px;
 }
 
 #game {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 20px); /* Full height minus padding */
+  height: 100%;
 }
 
-/* Info bar at the top */
+/* ------- top info bar ------- */
 #info {
-  padding: 5px;
-  margin-bottom: 10px;
+  padding: 6px 10px;
   text-align: center;
-  font-size: 0.9em;
-  color: #555;
+  font-size: .9rem;
+  color: var(--hint);
+  background: var(--secondary-bg);
+  border-bottom: 1px solid var(--hint);
 }
 
-#sets-count {
-    margin-top: 5px;
-    font-weight: bold;
-}
+#room-code-display { font-weight: 600; margin-bottom: 2px; }
+#sets-count       { margin-top: 4px; font-weight: 600; color: var(--text); }
 
-/* Board container - this will scroll */
+/* ------- board container ------- */
 #board-container {
-  flex-grow: 1;
+  flex: 1 1 auto;
   overflow-y: auto;
-  padding-bottom: 10px;
+  padding: 10px 0 14px;
 }
 
-/* The board itself - a flex container for wrapping */
 #board {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
   justify-content: center;
+  gap: 10px;
 }
 
-/* Individual card styling */
+/* ----- card ----- */
 .card {
-  width: 100px; /* Fixed width */
-  height: 150px;  /* Fixed height */
-  flex-shrink: 0; /* Prevent cards from shrinking */
-  box-sizing: border-box; /* Ensure padding is included in the size */
-  background-color: #fff;
-  border: 2px solid #ccc;
+  /* Responsive width: 3 cards per row on narrow screens,
+     4 cards if width > 470 px */
+  width: calc((100% - 30px)/3);
+  max-width: 110px;
+  aspect-ratio: 2 / 3;            /* Keep proportions without fixed height */
+  background: var(--secondary-bg);
+  border: 2px solid var(--hint);
   border-radius: 8px;
-  padding: 5px;
-  cursor: pointer;
+  padding: 4% 2%;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: space-around;
-  transition: transform 0.1s ease, border-color 0.1s ease;
+  align-items: center;
+  cursor: pointer;
+  transition: transform .08s ease, border-color .08s ease;
 }
 
-.card:hover {
-  border-color: #999;
+@media (min-width: 470px) {
+  .card { width: calc((100% - 40px)/4); }
 }
 
+.card:hover       { border-color: var(--link); }
 .card.selected {
-  border-color: #007bff;
+  border-color: var(--link);
   transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 123, 255, .45);
 }
 
-/* Symbol (SVG) styling */
-.symbol {
-  width: 80%;
-  height: auto;
-}
+.symbol { width: 80%; height: auto; }
 
-/* Controls at the bottom */
+/* ------- controls block ------- */
 #controls {
-  padding-top: 10px;
+  padding: 10px;
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 10px;
-  flex-shrink: 0; /* Prevent controls from shrinking */
-  flex-wrap: wrap; /* Allow buttons to wrap to the next line */
+  background: var(--bg);
+  border-top: 1px solid var(--hint);
 }
 
-/* General button styling */
 button {
   padding: 10px 15px;
-  font-size: 1em;
+  font-size: 1rem;
   border: none;
-  border-radius: 5px;
-  background-color: #007bff;
-  color: white;
+  border-radius: 6px;
+  background: var(--button);
+  color: var(--button-text);
   cursor: pointer;
 }
 
-button:hover {
-  background-color: #0056b3;
-}
+button:hover  { filter: brightness(0.9); }
+button:active { transform: scale(0.98); }
 
 input[type="text"] {
-    padding: 10px;
-    font-size: 1em;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    margin-bottom: 10px;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid var(--hint);
+  border-radius: 6px;
+  width: 220px;
 }
