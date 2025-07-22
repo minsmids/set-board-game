@@ -1,63 +1,46 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SET Multiplayer</title>
-
-  <!-- Telegram Web-view -->
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#ffffff" />
-
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="set-game.js"></script>
 </head>
 <body>
   <div id="app">
-    <!-- Блок входа -->
     <div id="login">
       <h2>Вход</h2>
-      <input type="text" id="nickname" placeholder="Введите имя" />
+      <input type="text" id="nickname" placeholder="Ваше имя">
       <button onclick="manualLogin()">Войти</button>
     </div>
 
-    <!-- Лобби: создать или присоединиться к комнате -->
-    <div id="lobby" style="display:none;">
+    <div id="lobby" style="display: none;">
       <h2>Лобби</h2>
       <button onclick="createNewRoom()">Создать новую комнату</button>
       <div>
-        <input type="text" id="room-code-input" placeholder="Код комнаты" />
+        <input type="text" id="room-code-input" placeholder="Код комнаты">
         <button onclick="joinRoomByCode()">Войти в комнату</button>
       </div>
     </div>
 
-    <!-- Игровой экран -->
-    <div id="game" style="display:none;">
-      <div id="room-info">
-        <div id="room-code-display"></div>
-        <div id="sets-count"></div>
-        <div id="players"></div>
-      </div>
+    <div id="game" style="display: none;">
+      <div id="room-code-display">Комната: -</div>
+      <div id="sets-count">Сеты: 0</div>
+      <div id="players">Игроки: -</div>
+      <input type="text" id="invite-link" readonly style="display: none;">
       <div id="board-container">
         <div id="board"></div>
       </div>
       <div id="controls">
-        <input
-          type="text"
-          id="invite-link"
-          style="display:none; width:100%; padding:8px; box-sizing:border-box;"
-          readonly
-        />
         <button onclick="addMoreCards()">+3 карты</button>
         <button onclick="newGame()">Новая игра</button>
         <button onclick="endGame()">Завершить игру</button>
       </div>
     </div>
   </div>
-
-  <!-- SDKs и скрипты -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <script src="set-game.js"></script>
 </body>
 </html>
