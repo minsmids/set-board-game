@@ -61,7 +61,7 @@ async function loginUser(roomIdFromLink = null) {
   // 2) если пришли по приглашению
   if (roomIdFromLink) {
     if ((await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists()) {
-      // Removed automatic joinRoom(roomIdFromLink); return;
+      joinRoom(roomIdFromLink); return;
     }
     alert("Комната уже не существует"); return;
   }
