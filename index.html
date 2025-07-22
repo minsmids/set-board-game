@@ -1,45 +1,69 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SET Multiplayer</title>
-
-  <!-- Telegram Web-view -->
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#ffffff" />
-
-  <link rel="stylesheet" href="style.css" />
-
-  <!-- SDK Telegram Web App -->
+  <link rel="stylesheet" href="style.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <!-- Firebase v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <script defer src="set-game.js"></script>
+  <script src="set-game.js"></script>
 </head>
-
 <body>
-  <!-- login for external browser -->
   <div id="login">
-    <input type="text" id="nickname" placeholder="Enter your name" />
+    <input id="nickname" type="text" placeholder="Ваше имя">
     <button onclick="manualLogin()">Play</button>
   </div>
 
-  <!-- lobby -->
-  <div id="lobby" style="display:none">
+  <div id="lobby">
     <button onclick="createNewRoom()">Создать новую игру</button>
-    <div style="margin-top:20px">
-      <input type="text" id="room-code-input"
-             placeholder="Введите код комнаты (6 цифр)" maxlength="6" />
+    <div>
+      <input id="room-code-input" type="text" placeholder="Код комнаты">
       <button onclick="joinRoomByCode()">Присоединиться по коду</button>
     </div>
   </div>
 
-  <!-- main game screen -->
-  <div id="game" style="display:none">
+  <div id="game">
     <div id="info">
       <div id="room-code-display"></div>
       <div id="players"></div>
@@ -51,7 +75,7 @@
     </div>
 
     <div id="controls">
-      <div id="room-invite-link" style="display:none;"></div>
+      <a id="invite-link" style="display:none">Пригласить</a>
       <button onclick="addMoreCards()">+3 карты</button>
       <button onclick="newGame()">Новая игра</button>
       <button onclick="endGame()">Завершить игру</button>
