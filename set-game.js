@@ -171,3 +171,19 @@
         const ok=[0,1,2,3].every(i=>{const s=new Set([a[i],b[i],c[i]]);return s.size===1||s.size===3;});
         if(ok){let newCards=[...cards];selected.sort((x,y)=>y-x).forEach(i=>newCards.splice(i,1));
           if(newCards.length<12&&avail.length>=3){newCards=[...newCards,...avail.splice(0,3)];db.ref("game/available
+document.addEventListener('DOMContentLoaded', () => {
+  // Если запустили из Telegram → берём ник из WebApp
+  const tUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  if (tUser) {
+    nickname =
+      tUser.username ||
+      `${tUser.first_name || 'user'}_${tUser.id}`;
+    console.log('auto-login as', nickname);
+    // показываем поле игры
+    document.getElementById('game').style.display = 'block';
+    joinGame();
+  } else {
+    // Запуск в обычном браузере: показать форму логина
+    document.getElementById('login').style.display = 'block';
+  }
+});
