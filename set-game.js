@@ -8,7 +8,7 @@
 
 /******************* Firebase CONFIG ********************/
 const firebaseConfig = {
-  apiKey: "AIzaSy…",                     // ←--­ свои ключи
+  apiKey: "AIzaSy…",                     // ←-- свои ключи
   authDomain: "set-telegram.firebaseapp.com",
   databaseURL: "https://set-telegram-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "set-telegram",
@@ -240,68 +240,48 @@ function drawBoard(cards) {
 }
 
 function layoutCards() {
-  const GAP = 10;
+  const GAP = 8; // Consistent with CSS gap
+  const MIN_CARD_WIDTH = 60; // Minimum card width for usability
+  const MAX_CARD_WIDTH = 120; // Maximum card width for larger screens
   const board = document.getElementById("board");
   const box = document.getElementById("board-container");
   const N = board.children.length;
-  
+
   if (!N || !box) return;
 
-  const W = box.clientWidth - 20; // учитываем padding контейнера
-  const H = box.clientHeight - 20;
+  // Account for padding and safe-area-insets
+  const computedStyle = getComputedStyle(box);
+  const paddingX = parseFloat(computedStyle.paddingLeft) + parseFloat(computedStyle.paddingRight);
+  const paddingY = parseFloat(computedStyle.paddingTop) + parseFloat(computedStyle.paddingBottom);
+  const W = box.clientWidth - paddingX;
+  const H = box.clientHeight - paddingY;
 
-  let bestCols = 1;
-  let bestW = 0;
-  let bestFit = false;
-
-  // Ищем оптимальное количество колонок
-  for (let cols = Math.min(N, Math.floor(W / 80)); cols >= 1; cols--) {
-    const cardW = (W - GAP * (cols - 1)) / cols;
-    const cardH = cardW * 1.5; // соотношение 2:3
-    const rows = Math.ceil(N / cols);
-    const totalH = rows * cardH + GAP * (rows - 1);
-    
-    // Минимальная ширина карты должна быть хотя бы 60px
-    if (cardW >= 60) {
-      if (totalH <= H) {
-        // Помещается без скролла - берем максимальные колонки
-        bestCols = cols;
-        bestW = cardW;
-        bestFit = true;
-        break;
-      } else if (!bestFit) {
-        // Не помещается, но это лучший вариант пока что
-        bestCols = cols;
-        bestW = cardW;
-      }
-    }
-  }
-
-  // Если ничего не подошло, используем минимальные настройки
-  if (bestW === 0) {
-    bestCols = 1;
-    bestW = Math.max(60, W - GAP);
-  }
-
-  // Настройка контейнера для скролла если нужно
-  const cardH = bestW * 1.5;
-  const rows = Math.ceil(N / bestCols);
+  // Calculate number of columns based on available width
+  let cols = Math.floor(W / (MIN_CARD_WIDTH + GAP));
+  cols = Math.max(1, Math.min(cols, N)); // At least 1, at most N
+  let cardW = (W - GAP * (cols - 1)) / cols;
+  cardW = Math.min(Math.max(cardW, MIN_CARD_WIDTH), MAX_CARD_WIDTH); // Clamp card width
+  const cardH = cardW * 1.5; // Maintain 2:3 aspect ratio
+  const rows = Math.ceil(N / cols);
   const totalH = rows * cardH + GAP * (rows - 1);
-  
+
+  // Enable scrolling if content height exceeds container height
   box.style.overflowY = totalH > H ? "auto" : "hidden";
-  
-  // Применяем размеры к картам
+
+  // Apply styles to board for centering
+  board.style.display = "flex";
+  board.style.flexWrap = "wrap";
+  board.style.gap = `${GAP}px`;
+  board.style.width = `${cols * cardW + (cols - 1) * GAP}px`;
+  board.style.margin = "0 auto";
+
+  // Apply card sizes
   Array.from(board.children).forEach(card => {
-    card.style.width = `${bestW}px`;
+    card.style.width = `${cardW}px`;
     card.style.height = `${cardH}px`;
-    card.style.minWidth = `${bestW}px`;
+    card.style.minWidth = `${cardW}px`;
     card.style.minHeight = `${cardH}px`;
   });
-
-  // Обновляем стили board для правильного отображения
-  board.style.width = '100%';
-  board.style.maxWidth = `${bestCols * bestW + (bestCols - 1) * GAP}px`;
-  board.style.margin = '0 auto';
 }
 window.addEventListener("resize", layoutCards);
 
