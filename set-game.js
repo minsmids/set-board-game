@@ -121,7 +121,12 @@ btn.onclick = () => {
     btn.style.display = "block";
   }
 
-  db.ref(`rooms/${roomId}/players/${nickname}`).set({score:0});
+  // Не сбрасывать счёт при переподключении
+  const playerRef = db.ref(`rooms/${roomId}/players/${nickname}`);
+  playerRef.once("value", snap => {
+    if (!snap.exists()) playerRef.set({ score: 0 });
+  });
+
   db.ref(`playerSessions/${nickname}`).set(roomId);
 
   if (isHost) initializeGame();
