@@ -16,6 +16,7 @@ body {
   height: 100dvh;
   /* fallback для старых движков Safari/Chrome: */
   height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 body {
@@ -156,4 +157,14 @@ input[type="text"]{
   border: 1px solid var(--hint);
   border-radius: 6px;
   width: 220px;
+}
+
+/* ===== Mobile-specific adjustments ===== */
+@media (max-width: 480px) {
+  #board-container {
+    padding: 4px;
+  }
+  #board {
+    gap: 4px;
+  }
 }
