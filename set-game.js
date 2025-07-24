@@ -213,10 +213,8 @@ function checkSet() {
 
     if (isSet) {
       // Успех! Убираем карты и добавляем новые
-      let newCards = [...allCards];
-      let avail = gameData.availableCards || [];
-
-      selectedCardsIndices.sort((x, y) => y - x).forEach(i => newCards.splice(i, 1));
+      // Фильтруем выбранные карты, чтобы создать newCards
+      const newCards = allCards.filter((_, idx) => !selectedCardsIndices.includes(idx));
 
       if (newCards.length < 12 && avail.length >= 3) {
         newCards.push(...avail.splice(0, 3));
