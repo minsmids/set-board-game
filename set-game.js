@@ -172,27 +172,63 @@ function selectCard(idx) {
 }
 
 function checkSet() {
-  db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
-    const {cards=[],availableCards:avail=[]} = snap.val()||{};
-    const [a,b,c] = selected.map(i => cards[i]);
-    const isSet   = [0,1,2,3].every(i => {
-      const s = new Set([a[i],b[i],c[i]]); return s.size===1 || s.size===3;
+  const selectedCardsIndices = [...selected]; // Копируем, чтобы избежать гонок
+  selected = []; // Сразу сбрасываем локальный выбор
+
+  const gameRef = db.ref(`rooms/${currentRoomId}/game`);
+
+  gameRef.transaction(gameData => {
+    if (!gameData) return gameData; // Если данных нет, выходим
+
+    // Убедимся, что все выбранные карты все еще на столе
+    const allCards = gameData.cards || [];
+    if (selectedCardsIndices.some(idx => !allCards[idx])) {
+      // Одна из карт уже была убрана, отменяем транзакцию
+      // Ничего не возвращаем (undefined), чтобы Firebase отменил транзакцию
+      return;
+    }
+
+    const [a, b, c] = selectedCardsIndices.map(i => allCards[i]);
+    const isSet = [0, 1, 2, 3].every(i => {
+      const s = new Set([a[i], b[i], c[i]]);
+      return s.size === 1 || s.size === 3;
     });
 
     if (isSet) {
-      let newCards = [...cards];
-      selected.sort((x,y)=>y-x).forEach(i=>newCards.splice(i,1));
-      if (newCards.length<12 && avail.length>=3)
-        newCards = [...newCards, ...avail.splice(0,3)],
-        db.ref(`rooms/${currentRoomId}/game/availableCards`).set(avail);
+      // Успех! Убираем карты и добавляем новые
+      let newCards = [...allCards];
+      let avail = gameData.availableCards || [];
 
-      db.ref(`rooms/${currentRoomId}/game/cards`).set(newCards);
-      db.ref(`rooms/${currentRoomId}/players/${nickname}/score`)
-        .transaction(s => (s||0)+1);
+      selectedCardsIndices.sort((x, y) => y - x).forEach(i => newCards.splice(i, 1));
+
+      if (newCards.length < 12 && avail.length >= 3) {
+        newCards.push(...avail.splice(0, 3));
+      }
+
+      gameData.cards = newCards;
+      gameData.availableCards = avail;
+
+      // Начисляем очко игроку (вне этой транзакции, чтобы не усложнять)
+      db.ref(`rooms/${currentRoomId}/players/${nickname}/score`).transaction(s => (s || 0) + 1);
       Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light");
-    } else alert("Это не SET");
 
-    selected = [];
+    } else {
+      // Не сет! Штрафуем игрока
+      alert("Это не SET");
+      db.ref(`rooms/${currentRoomId}/players/${nickname}/score`).transaction(s => (s || 0) - 1);
+    }
+
+    return gameData; // Возвращаем обновленные данные игры
+
+  }, (error, committed, snapshot) => {
+    if (error) {
+      console.error("Transaction failed abnormally!", error);
+    } else if (!committed) {
+      // Транзакция была отменена (другой игрок успел раньше)
+      console.log("Set was already claimed by another player.");
+      alert("Кто-то уже забрал этот сет!");
+    }
+    // После завершения транзакции (успех, провал или отмена) перерисовываем доску
     db.ref(`rooms/${currentRoomId}/game/cards`).once("value", s => drawBoard(s.val()));
   });
 }
