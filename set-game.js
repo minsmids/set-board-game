@@ -88,7 +88,19 @@ async function createNewRoom() {
   while ((await db.ref(`rooms/${code}`).once("value")).exists() && ++attempts<10);
   if (attempts===10) return alert("Не удалось создать комнату, попробуйте ещё");
   currentRoomId = code;
-  joinRoom(code, true);
+
+  // Создаем комнату и сразу инициализируем игру
+  await db.ref(`rooms/${code}`).set({
+    createdAt: Date.now(),
+    players: {},
+    game: {
+      cards: [],
+      availableCards: []
+    }
+  });
+  initializeGame(); // Инициализируем игру для новой комнаты
+
+  joinRoom(code); // Присоединяемся к комнате (без флага isHost)
 }
 
 async function joinRoomByCode() {
@@ -100,7 +112,7 @@ async function joinRoomByCode() {
 }
 
 /******************* Core room handshake ********************/
-function joinRoom(roomId, isHost = false) {
+function joinRoom(roomId) {
   currentRoomId = roomId;
 
   document.getElementById("login").style.display  = "none";
@@ -121,15 +133,15 @@ btn.onclick = () => {
     btn.style.display = "block";
   }
 
-  // Не сбрасывать счёт при переподключении
+  // Присоединяемся к игрокам. Если игрок новый, его счёт 0.
+  // Иначе — счёт сохраняется (транзакция отменяется).
   const playerRef = db.ref(`rooms/${roomId}/players/${nickname}`);
-  playerRef.once("value", snap => {
-    if (!snap.exists()) playerRef.set({ score: 0 });
+  playerRef.transaction(playerData => {
+    if (playerData === null) return { score: 0 }; // Игрок не существует, создаём его
+    return; // Игрок уже есть, отменяем транзакцию
   });
 
   db.ref(`playerSessions/${nickname}`).set(roomId);
-
-  if (isHost) initializeGame();
 
   db.ref(`rooms/${roomId}/game/cards`)
     .on("value", snap => drawBoard(snap.val() || []));
