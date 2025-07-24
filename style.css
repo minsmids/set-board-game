@@ -89,10 +89,10 @@ body {
 #board {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(3, 1fr); /* Enforce 3 rows for 12 cards */
-  gap: 10px;
-  padding: 10px;
-  width: min(100vw, 414px); /* Fix width for Telegram viewport */
+  /* Row height will be determined by card aspect-ratio */
+  gap: 8px;
+  padding: 8px;
+  width: 100%; /* Use percentage for responsive width */
   max-width: 414px; /* Cap at typical mobile width */
   min-height: 0; /* Allow shrinking within flex container */
   box-sizing: border-box;
@@ -101,7 +101,7 @@ body {
 /* ===== Card ===== */
 .card {
   aspect-ratio: 2 / 3;
-  width: calc((min(100vw, 414px) - 50px) / 4); /* Account for 10px gap and 10px padding */
+  /* Width is now handled by the grid's `1fr` columns */
   background: var(--secondary-bg);
   border: 2px solid var(--hint);
   border-radius: 8px;
