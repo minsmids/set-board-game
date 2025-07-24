@@ -84,6 +84,8 @@ body {
   justify-content: center;
   align-items: center; /* Center vertically for consistent layout */
   overflow: hidden;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
 #board {
@@ -91,7 +93,6 @@ body {
   grid-template-columns: repeat(4, 1fr);
   /* Row height will be determined by card aspect-ratio */
   gap: 8px;
-  padding: 8px;
   width: 100%; /* Use percentage for responsive width */
   max-width: 414px; /* Cap at typical mobile width */
   min-height: 0; /* Allow shrinking within flex container */
