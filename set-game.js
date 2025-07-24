@@ -110,7 +110,7 @@ function joinRoom(roomId, isHost = false) {
 btn.onclick = () => {
   const shareText = "Присоединяйся ко мне в игре SET!";
   const shareUrl  = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`;
-  window.open(shareUrl, "_blank");
+  Telegram.WebApp.openTelegramLink(shareUrl);
 };
     btn.style.display = "block";
   }
