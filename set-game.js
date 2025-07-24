@@ -121,7 +121,11 @@ btn.onclick = () => {
     btn.style.display = "block";
   }
 
-  db.ref(`rooms/${roomId}/players/${nickname}`).set({score:0});
+db.ref(`rooms/${roomId}/players/${nickname}`).once("value", snap => {
+  if (!snap.exists()) {
+    db.ref(`rooms/${roomId}/players/${nickname}`).set({score: 0});
+  }
+});
   db.ref(`playerSessions/${nickname}`).set(roomId);
 
   if (isHost) initializeGame();
