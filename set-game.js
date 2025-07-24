@@ -107,7 +107,11 @@ function joinRoom(roomId, isHost = false) {
   if (btn) {
     const bot = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
     const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;     // 
-    btn.onclick = () => Telegram.WebApp.openTelegramLink(link);
+btn.onclick = () => {
+  const shareText = "Присоединяйся ко мне в игре SET!";
+  const shareUrl  = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`;
+  window.open(shareUrl, "_blank");
+};
     btn.style.display = "block";
   }
 
