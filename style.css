@@ -101,7 +101,7 @@ body {
 /* ===== Card ===== */
 .card {
   aspect-ratio: 2 / 3;
-  width: calc((min(100vw, 414px) - 30px) / 4); /* Account for 10px gap and 10px padding */
+  width: calc((min(100vw, 414px) - 50px) / 4); /* Account for 10px gap and 10px padding */
   background: var(--secondary-bg);
   border: 2px solid var(--hint);
   border-radius: 8px;
