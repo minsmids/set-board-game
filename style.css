@@ -90,7 +90,7 @@ body {
 
 #board {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   /* Row height will be determined by card aspect-ratio */
   gap: 8px;
   width: 100%; /* Use percentage for responsive width */
