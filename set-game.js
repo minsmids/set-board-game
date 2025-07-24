@@ -138,17 +138,17 @@ btn.onclick = () => {
 
 /******************* Game lifecycle ********************/
 function initializeGame() {
-  db.ref(`rooms/${currentRoomId}/players`).remove();      // reset scores
-
+  // не удаляем игроков, только игру
   const deck = [];
   for (let c=0;c<3;c++) for (let s=0;s<3;s++)
     for (let f=0;f<3;f++) for (let n=1;n<=3;n++) deck.push([c,s,f,n]);
   shuffle(deck);
 
   db.ref(`rooms/${currentRoomId}/game`).set({
-    cards          : deck.splice(0,12),
-    availableCards : deck
+    cards: deck.splice(0, 12),
+    availableCards: deck
   });
+
   selected = [];
 }
 
@@ -216,6 +216,15 @@ function drawBoard(cardsData) {
       : [];
 
   console.log("Rendering board with", cards.length, "cards");
+  // Проверка окончания игры
+if (cards.length >= 12) {
+  db.ref(`rooms/${currentRoomId}/game/availableCards`).once("value", snap => {
+    const avail = snap.val() || [];
+    if (avail.length === 0 && countSets(cards) === 0) {
+      announceWinnerAndRestart();
+    }
+  });
+}
 
   // Update info bar
   document.getElementById("room-code-display").innerText = `Код комнаты: ${currentRoomId}`;
@@ -240,6 +249,23 @@ function drawBoard(cardsData) {
 
     board.appendChild(div);
     console.log(`Card ${idx} appended to board.`);
+  });
+}
+
+function announceWinnerAndRestart() {
+  db.ref(`rooms/${currentRoomId}/players`).once("value", snap => {
+    const players = snap.val() || {};
+    let winner = null, maxScore = -1;
+
+    for (const [name, data] of Object.entries(players)) {
+      if ((data.score || 0) > maxScore) {
+        winner = name;
+        maxScore = data.score;
+      }
+    }
+
+    alert(`Игра окончена!\nПобедитель: ${winner} с ${maxScore} очками.`);
+    initializeGame(); // Запускаем новую игру
   });
 }
 
