@@ -24,8 +24,6 @@ body {
   background: var(--bg);
   color: var(--text);
   margin: 0;
-  padding: env(safe-area-inset-top,0) env(safe-area-inset-right,0)
-           env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
   box-sizing: border-box;
   overscroll-behavior-y: none;          /* отключаем pull-to-refresh */
 }
@@ -46,6 +44,8 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  padding: env(safe-area-inset-top,0) env(safe-area-inset-right,0)
+           env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
 }
 
 /* ===== Top / bottom bars ===== */
