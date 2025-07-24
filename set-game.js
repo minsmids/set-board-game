@@ -59,12 +59,18 @@ async function loginUser(roomIdFromLink = null) {
   if (prevRoom) db.ref(`playerSessions/${nickname}`).remove();   // зачистить «битую» сессию
 
   // 2) если пришли по приглашению
-  if (roomIdFromLink) {
-    if ((await db.ref(`rooms/${roomIdFromLink}`).once("value")).exists()) {
-      joinRoom(roomIdFromLink); return;
-    }
-    alert("Комната уже не существует"); showLobby(); return;
+if (roomIdFromLink) {
+  const roomRef = db.ref(`rooms/${roomIdFromLink}`);
+  const roomSnap = await roomRef.once("value");
+
+  if (!roomSnap.exists()) {
+    // создаём пустую комнату
+    await roomRef.set({ createdAt: Date.now(), players: {} });
   }
+
+  joinRoom(roomIdFromLink);
+  return;
+}
 
   // 3) новый пользователь – показываем лобби
   showLobby();
