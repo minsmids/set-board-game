@@ -29,14 +29,15 @@
   </div>
 
   <!-- lobby -->
-  <div id="lobby" style="display:none">
-    <button onclick="createNewRoom()">Создать новую игру</button>
-    <div style="margin-top:20px">
-      <input type="text" id="room-code-input"
-             placeholder="Введите код комнаты (6 цифр)" maxlength="6" />
-      <button onclick="joinRoomByCode()">Присоединиться по коду</button>
-    </div>
+<div id="lobby" style="display:none">
+  <div id="lobby-title">Добро пожаловать!</div>
+  <button onclick="createNewRoom()">Создать новую игру</button>
+  <div class="join-block">
+    <input type="text" id="room-code-input"
+           placeholder="Введите код комнаты (6 цифр)" maxlength="6" />
+    <button onclick="joinRoomByCode()">Присоединиться по коду</button>
   </div>
+</div>
 
   <!-- main game screen -->
   <div id="game" style="display:none">
