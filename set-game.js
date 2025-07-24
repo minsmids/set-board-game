@@ -88,19 +88,7 @@ async function createNewRoom() {
   while ((await db.ref(`rooms/${code}`).once("value")).exists() && ++attempts<10);
   if (attempts===10) return alert("Не удалось создать комнату, попробуйте ещё");
   currentRoomId = code;
-
-  // Создаем комнату и сразу инициализируем игру
-  await db.ref(`rooms/${code}`).set({
-    createdAt: Date.now(),
-    players: {},
-    game: {
-      cards: [],
-      availableCards: []
-    }
-  });
-  initializeGame(); // Инициализируем игру для новой комнаты
-
-  joinRoom(code); // Присоединяемся к комнате (без флага isHost)
+  joinRoom(code, true);
 }
 
 async function joinRoomByCode() {
@@ -112,7 +100,7 @@ async function joinRoomByCode() {
 }
 
 /******************* Core room handshake ********************/
-function joinRoom(roomId) {
+function joinRoom(roomId, isHost = false) {
   currentRoomId = roomId;
 
   document.getElementById("login").style.display  = "none";
@@ -133,15 +121,10 @@ btn.onclick = () => {
     btn.style.display = "block";
   }
 
-  // Присоединяемся к игрокам. Если игрок новый, его счёт 0.
-  // Иначе — счёт сохраняется (транзакция отменяется).
-  const playerRef = db.ref(`rooms/${roomId}/players/${nickname}`);
-  playerRef.transaction(playerData => {
-    if (playerData === null) return { score: 0 }; // Игрок не существует, создаём его
-    return; // Игрок уже есть, отменяем транзакцию
-  });
-
+  db.ref(`rooms/${roomId}/players/${nickname}`).set({score:0});
   db.ref(`playerSessions/${nickname}`).set(roomId);
+
+  if (isHost) initializeGame();
 
   db.ref(`rooms/${roomId}/game/cards`)
     .on("value", snap => drawBoard(snap.val() || []));
@@ -189,61 +172,27 @@ function selectCard(idx) {
 }
 
 function checkSet() {
-  const selectedCardsIndices = [...selected]; // Копируем, чтобы избежать гонок
-  selected = []; // Сразу сбрасываем локальный выбор
-
-  const gameRef = db.ref(`rooms/${currentRoomId}/game`);
-
-  gameRef.transaction(gameData => {
-    if (!gameData) return gameData; // Если данных нет, выходим
-
-    // Убедимся, что все выбранные карты все еще на столе
-    const allCards = gameData.cards || [];
-    if (selectedCardsIndices.some(idx => !allCards[idx])) {
-      // Одна из карт уже была убрана, отменяем транзакцию
-      // Ничего не возвращаем (undefined), чтобы Firebase отменил транзакцию
-      return;
-    }
-
-    const [a, b, c] = selectedCardsIndices.map(i => allCards[i]);
-    const isSet = [0, 1, 2, 3].every(i => {
-      const s = new Set([a[i], b[i], c[i]]);
-      return s.size === 1 || s.size === 3;
+  db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
+    const {cards=[],availableCards:avail=[]} = snap.val()||{};
+    const [a,b,c] = selected.map(i => cards[i]);
+    const isSet   = [0,1,2,3].every(i => {
+      const s = new Set([a[i],b[i],c[i]]); return s.size===1 || s.size===3;
     });
 
     if (isSet) {
-      // Успех! Убираем карты и добавляем новые
-      // Фильтруем выбранные карты, чтобы создать newCards
-      const newCards = allCards.filter((_, idx) => !selectedCardsIndices.includes(idx));
+      let newCards = [...cards];
+      selected.sort((x,y)=>y-x).forEach(i=>newCards.splice(i,1));
+      if (newCards.length<12 && avail.length>=3)
+        newCards = [...newCards, ...avail.splice(0,3)],
+        db.ref(`rooms/${currentRoomId}/game/availableCards`).set(avail);
 
-      if (newCards.length < 12 && avail.length >= 3) {
-        newCards.push(...avail.splice(0, 3));
-      }
-
-      gameData.cards = newCards;
-      gameData.availableCards = avail;
-
-      // Начисляем очко игроку (вне этой транзакции, чтобы не усложнять)
-      db.ref(`rooms/${currentRoomId}/players/${nickname}/score`).transaction(s => (s || 0) + 1);
+      db.ref(`rooms/${currentRoomId}/game/cards`).set(newCards);
+      db.ref(`rooms/${currentRoomId}/players/${nickname}/score`)
+        .transaction(s => (s||0)+1);
       Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light");
+    } else alert("Это не SET");
 
-    } else {
-      // Не сет! Штрафуем игрока
-      alert("Это не SET");
-      db.ref(`rooms/${currentRoomId}/players/${nickname}/score`).transaction(s => (s || 0) - 1);
-    }
-
-    return gameData; // Возвращаем обновленные данные игры
-
-  }, (error, committed, snapshot) => {
-    if (error) {
-      console.error("Transaction failed abnormally!", error);
-    } else if (!committed) {
-      // Транзакция была отменена (другой игрок успел раньше)
-      console.log("Set was already claimed by another player.");
-      alert("Кто-то уже забрал этот сет!");
-    }
-    // После завершения транзакции (успех, провал или отмена) перерисовываем доску
+    selected = [];
     db.ref(`rooms/${currentRoomId}/game/cards`).once("value", s => drawBoard(s.val()));
   });
 }
