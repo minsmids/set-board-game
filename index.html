@@ -25,6 +25,14 @@
     onload="initAnalytics()" 
     type="text/javascript"
 ></script>
+  <script>
+    function initAnalytics() {
+      window.telegramAnalytics.init({
+        token: 'YOUR_TOKEN',
+        appName: 'ANALYTICS_IDENTIFIER',
+      });
+    }
+</script>
 </head>
 
 <body>
