@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 /******************* Auth flows ********************/
 function manualLogin() {
   nickname = document.getElementById("nickname")?.value.trim();
-  if (!nickname) { alert("Введите имя"); return; }
+  if (!nickname) { alert("Enter your name"); return; }
   loginUser();
 }
 
@@ -86,16 +86,16 @@ async function createNewRoom() {
   let code, attempts = 0;
   do { code = Math.floor(100000 + Math.random()*900000).toString(); }           // 6-digits
   while ((await db.ref(`rooms/${code}`).once("value")).exists() && ++attempts<10);
-  if (attempts===10) return alert("Не удалось создать комнату, попробуйте ещё");
+  if (attempts===10) return alert("Something went wrong, sry");
   currentRoomId = code;
   joinRoom(code, true);
 }
 
 async function joinRoomByCode() {
   const code = document.getElementById("room-code-input")?.value.trim();
-  if (!/^\d{6}$/.test(code)) return alert("Введите корректный 6-значный код");
+  if (!/^\d{6}$/.test(code)) return alert("Input a valid 6 digit code");
   if (!(await db.ref(`rooms/${code}`).once("value")).exists())
-    return alert("Комната не найдена");
+    return alert("Room not found");
   joinRoom(code);
 }
 
@@ -114,7 +114,7 @@ function joinRoom(roomId, isHost = false) {
     const bot = Telegram.WebApp.initDataUnsafe.bot_username || "setboardgame_bot";
     const link = `https://t.me/${bot}/setgame?startapp=${currentRoomId}`;     // 
 btn.onclick = () => {
-  const shareText = "Присоединяйся ко мне в игре SET!";
+  const shareText = "Let's play set, mate";
   const shareUrl  = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`;
   Telegram.WebApp.openTelegramLink(shareUrl);
 };
@@ -156,11 +156,11 @@ function initializeGame() {
   selected = [];
 }
 
-function newGame()        { if (confirm("Новая партия?")) initializeGame(); }
+function newGame()        { if (confirm("New game?")) initializeGame(); }
 function addMoreCards()   {
   db.ref(`rooms/${currentRoomId}/game`).once("value", snap => {
     const {cards=[],availableCards:avail=[]} = snap.val()||{};
-    if (avail.length<3) return alert("Нет больше карт!");
+    if (avail.length<3) return alert("No more cards!");
     db.ref(`rooms/${currentRoomId}/game`).update({
       cards: [...cards, ...avail.splice(0,3)],
       availableCards: avail
@@ -202,7 +202,7 @@ function checkSet() {
 }
 
 function endGame() {
-  if (confirm("Завершить игру и удалить комнату?"))
+  if (confirm("End game and close the room?"))
     db.ref(`rooms/${currentRoomId}`).remove().then(showLobby);
 }
 
@@ -231,8 +231,8 @@ if (cards.length >= 12) {
 }
 
   // Update info bar
-  document.getElementById("room-code-display").innerText = `Код комнаты: ${currentRoomId}`;
-  document.getElementById("sets-count").innerText        = `Возможных SET-ов: ${countSets(cards)}`;
+  document.getElementById("room-code-display").innerText = `Room code: ${currentRoomId}`;
+  document.getElementById("sets-count").innerText        = `Valid sets on board: ${countSets(cards)}`;
 
   // Render each card
   cards.forEach((card, idx) => {
@@ -268,7 +268,7 @@ function announceWinnerAndRestart() {
       }
     }
 
-    alert(`Игра окончена!\nПобедитель: ${winner} с ${maxScore} очками.`);
+    alert(`Game ends!\nWinner: ${winner} с ${maxScore} очками.`);
     initializeGame(); // Запускаем новую игру
   });
 }
